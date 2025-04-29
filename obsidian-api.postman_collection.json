@@ -1,0 +1,230 @@
+{
+  "info": {
+    "name": "Obsidian API",
+    "description": "API for managing markdown files and folders in your Obsidian vault",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Files",
+      "item": [
+        {
+          "name": "List all markdown files",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/files",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["files"]
+            }
+          }
+        },
+        {
+          "name": "Read file contents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/files/{{path}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["files", "{{path}}"],
+              "variable": [
+                {
+                  "key": "path",
+                  "value": "path/to/file.md",
+                  "description": "Path to the markdown file"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create new file",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"content\": \"# New File\\n\\nThis is a new markdown file.\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/files/{{path}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["files", "{{path}}"],
+              "variable": [
+                {
+                  "key": "path",
+                  "value": "path/to/newfile.md",
+                  "description": "Path where the new file should be created"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Move/Rename file",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"new_path\": \"new/path/to/file.md\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/files/{{path}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["files", "{{path}}"],
+              "variable": [
+                {
+                  "key": "path",
+                  "value": "current/path/to/file.md",
+                  "description": "Current path of the file"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update file contents",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"content\": \"# Updated File\\n\\nThis is the updated content.\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/files/{{path}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["files", "{{path}}"],
+              "variable": [
+                {
+                  "key": "path",
+                  "value": "path/to/file.md",
+                  "description": "Path of the file to update"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Folders",
+      "item": [
+        {
+          "name": "List all folders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/folders",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["folders"]
+            }
+          }
+        },
+        {
+          "name": "List files in folder",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/folders/{{path}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["folders", "{{path}}"],
+              "variable": [
+                {
+                  "key": "path",
+                  "value": "path/to/folder",
+                  "description": "Path to the folder"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create new folder",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/folders/{{path}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["folders", "{{path}}"],
+              "variable": [
+                {
+                  "key": "path",
+                  "value": "path/to/new/folder",
+                  "description": "Path where the new folder should be created"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Move/Rename folder",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"new_path\": \"new/path/to/folder\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/folders/{{path}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["folders", "{{path}}"],
+              "variable": [
+                {
+                  "key": "path",
+                  "value": "current/path/to/folder",
+                  "description": "Current path of the folder"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+} 

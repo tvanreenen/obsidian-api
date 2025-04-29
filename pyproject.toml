@@ -1,0 +1,16 @@
+[project]
+name = "obsidian-api"
+version = "0.1.0"
+description = "FastAPI service for managing and searching an Obsidian vault."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.12",
+    "uvicorn>=0.34.2",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=8.3.5",
+]
