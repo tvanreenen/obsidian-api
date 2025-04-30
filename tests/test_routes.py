@@ -154,3 +154,21 @@ def test_hidden_directories(client):
     # Test listing contents of dot-prefixed directory, should not be able to list contents of dot-prefixed directories 
     response = client.get("/folders/.hidden")
     assert response.status_code == 404
+
+def test_paths_with_spaces(client):
+    # Test creating and reading a file with spaces using raw path
+    response = client.post(
+        "/files/Notes/Test File With Spaces.md",
+        json={"content": "# Test Content"}
+    )
+    assert response.status_code == 200
+    assert response.json()["message"] == "File created successfully: Notes/Test File With Spaces.md"
+    
+    response = client.get("/files/Notes/Test File With Spaces.md")
+    assert response.status_code == 200
+    assert response.json()["content"] == "# Test Content"
+    
+    # Test that URL-encoded path works for the same file
+    response = client.get("/files/Notes/Test%20File%20With%20Spaces.md")
+    assert response.status_code == 200
+    assert response.json()["content"] == "# Test Content"
