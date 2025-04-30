@@ -1,15 +1,15 @@
+> ⚠️ **Warning**: This is an experimental API for personal use on a local network. It is not secured and should not be exposed to the internet or used in production environments.
+
 # Obsidian API
 
-An API for managing markdown files and folders in your Obsidian vault.
+A personal RESTful API for managing markdown files and folders in your [Obsidian](https://obsidian.md/) vault.
 
 Built with:
-- FastAPI for the web framework
-- Pydantic for data validation
-- Uvicorn for the ASGI server
-- Pytest for testing
-- UV for package management
-
-> ⚠️ **Warning**: This is an experimental API for personal use on a local network. It is not secured and should not be exposed to the internet or used in production environments.
+- [FastAPI](https://github.com/FastAPI/FastAPI) for the web framework
+- [Pydantic](https://github.com/pydantic/pydantic) for data validation
+- [Uvicorn](https://github.com/encode/uvicorn) for the ASGI server
+- [Pytest](https://github.com/pytest-dev/pytest) for testing
+- [UV](https://github.com/astral-sh/uv) for package management
 
 ## Setup
 
@@ -56,7 +56,9 @@ Use the  `-v` flag to provide more detailed output.
 
 ## Reason for Creating
 
-While useful in itself, this API is part of a larger personal experiment in building a personal AI agent that integrates my Obsidian knowledge base as a tool. While Obsidian Copilot is a great plugin, I wanted the ability to integrate my knowledge base into other platforms like n8n, Claude desktop, etc.
+This project began as an educational endeavor, but it’s also something I’m actively using in a local, practical context. While the API is already valuable for some of my personal automations, it’s part of a broader experiment: building a personal, local AI agent. One key capability of this agent is integrating with my Obsidian knowledge base in a way that supports interoperability with other tools.
+
+Creating a file system API to interact directly with Obsidian’s raw data is just the first step. Although the Obsidian Copilot plugin is impressive, its vector store is locked within the plugin itself. I considered contributing to that project, but ultimately chose to build something of my own to retain the flexibility to explore and experiment more freely.
 
 Future Plans:
 - Make deployable in a local Docker services.
