@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 def test_list_files(client):
     response = client.get("/files")
     assert response.status_code == 200
@@ -118,3 +121,36 @@ def test_error_cases(client):
         json={"new_path": "Notes/test1.md"}  # Try to move test1.md to test2.md
     )
     assert response.status_code == 400  # Path already exists 
+
+def test_hidden_directories(client):
+    # Create a dot-prefixed directory in the test vault. Still might create through API or as fixture.
+    dot_dir = Path(os.getenv("OBSIDIAN_API_VAULT_PATH")) / ".hidden"
+    dot_dir.mkdir()
+    (dot_dir / "test.md").write_text("# Hidden File")
+    
+    # Test /files endpoint - should not include files from dot-prefixed directory
+    response = client.get("/files")
+    assert response.status_code == 200
+    files = response.json()
+    assert len(files) == 3  # Original test files should still be visible
+    assert "Notes/test1.md" in files
+    assert "Notes/test2.md" in files
+    assert "Projects/test3.md" in files
+    assert ".hidden/test.md" not in files
+    
+    # Test /folders endpoint - should not include dot-prefixed directory
+    response = client.get("/folders")
+    assert response.status_code == 200
+    folders = response.json()
+    assert len(folders) == 2
+    assert "Notes" in folders
+    assert "Projects" in folders
+    assert ".hidden" not in folders
+
+    # Test reading file from dot-prefixed directory, should not be able to read files in dot-prefixed directories 
+    response = client.get("/files/.hidden/test.md")
+    assert response.status_code == 404
+
+    # Test listing contents of dot-prefixed directory, should not be able to list contents of dot-prefixed directories 
+    response = client.get("/folders/.hidden")
+    assert response.status_code == 404

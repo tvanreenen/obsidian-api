@@ -9,7 +9,8 @@ from .validation import (
     validate_existing_folder,
     validate_new_folder,
     validate_destination_path,
-    get_vault_path
+    get_vault_path,
+    is_hidden_directory
 )
 
 router = APIRouter()
@@ -26,6 +27,9 @@ def _walk_vault(filter_func):
     items = []
     try:
         for root, dirs, files in os.walk(vault_path):
+            dirs[:] = [d for d in dirs if not is_hidden_directory(os.path.join(root, d))]
+            files[:] = [f for f in files if not is_hidden_directory(os.path.join(root, f))]
+            
             for item in filter_func(root, dirs, files):
                 vault_relative_path = os.path.relpath(os.path.join(root, item), vault_path)
                 items.append(vault_relative_path)

@@ -9,12 +9,24 @@ ensuring paths are valid, exist (or don't exist) as required, and are within the
 import os
 from fastapi import HTTPException
 from typing import Optional, Literal
+from pathlib import Path
 
 def get_vault_path() -> str:
     path = os.getenv("OBSIDIAN_API_VAULT_PATH")
     if not path:
         raise HTTPException(status_code=400, detail="OBSIDIAN_API_VAULT_PATH environment variable must be set")
     return path
+
+def is_hidden_directory(path: str) -> bool:
+    path_parts = Path(path).parts
+    current_path = Path(get_vault_path())
+    
+    for part in path_parts:
+        current_path = current_path / part
+        if part.startswith('.') and current_path.is_dir():
+            return True
+            
+    return False
 
 def _get_full_path(vault_relative_path: str) -> str:
     full_path = os.path.join(get_vault_path(), vault_relative_path)
@@ -29,6 +41,9 @@ def _validate_path(
     must_be_markdown: bool = False
 ) -> str:
     full_path = _get_full_path(vault_relative_path)
+    
+    if is_hidden_directory(full_path):
+        raise HTTPException(status_code=404, detail=f"{path_type.capitalize()} not found: {vault_relative_path}")
     
     if must_exist:
         if not os.path.exists(full_path):
