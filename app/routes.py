@@ -47,8 +47,10 @@ async def read_file(
         with open(full_file_path, 'r', encoding='utf-8') as f:
             content = f.read()
         return {"content": content}
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error reading file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error reading file: {str(e)}")
 
 @router.post("/files/{vault_file_path:path}", summary="Create a new file")
 async def create_file(
@@ -62,8 +64,10 @@ async def create_file(
         with open(full_file_path, 'w', encoding='utf-8') as f:
             f.write(file_content.content)
         return {"message": f"File created successfully: {vault_file_path}"}
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error creating file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating file: {str(e)}")
 
 @router.patch("/files/{vault_file_path:path}", summary="Move/Rename a file")
 async def move_file(
@@ -76,8 +80,10 @@ async def move_file(
         os.makedirs(os.path.dirname(full_destination_path), exist_ok=True)
         os.rename(full_file_path, full_destination_path)
         return {"message": f"File moved successfully to {move_path.new_path}"}
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error moving file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error moving file: {str(e)}")
 
 @router.put("/files/{vault_file_path:path}", summary="Update an existing file")
 async def update_file(
@@ -89,8 +95,10 @@ async def update_file(
         with open(full_file_path, 'w', encoding='utf-8') as f:
             f.write(file_content.content)
         return {"message": f"File updated successfully: {vault_file_path}"}
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error updating file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error updating file: {str(e)}")
 
 # Folders endpoints
 @router.get("/folders", summary="List all folders")
@@ -99,10 +107,9 @@ def list_folders():
 
 @router.get("/folders/{vault_folder_path:path}", summary="List files in a specific folder")
 async def list_folder_files(
-    vault_folder_path: str
+    full_folder_path: Annotated[str, Depends(validate_existing_folder)]
 ):
     try:
-        full_folder_path = validate_existing_folder(vault_folder_path)
         files = []
         for root, _, filenames in os.walk(full_folder_path):
             for filename in filenames:
@@ -110,8 +117,10 @@ async def list_folder_files(
                     vault_relative_path = os.path.relpath(os.path.join(root, filename), get_vault_path())
                     files.append(vault_relative_path)
         return files
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error listing folder contents: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error listing folder contents: {str(e)}")
 
 @router.post("/folders/{vault_folder_path:path}", summary="Create a new folder")
 async def create_folder(
@@ -121,8 +130,10 @@ async def create_folder(
     try:
         os.makedirs(full_folder_path)
         return {"message": f"Folder created successfully: {vault_folder_path}"}
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error creating folder: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating folder: {str(e)}")
 
 @router.patch("/folders/{vault_folder_path:path}", summary="Move/Rename a folder")
 async def move_folder(
@@ -138,5 +149,7 @@ async def move_folder(
         
         os.rename(full_path, full_destination_path)
         return {"message": f"Folder moved successfully to {move_path.new_path}"}
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error moving folder: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error moving folder: {str(e)}")
