@@ -1,0 +1,11 @@
+services:
+  obsidian-api:
+    image: obsidian-api:latest
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - OBSIDIAN_API_VAULT_PATH=/mnt/vault
+    volumes:
+      - ${OBSIDIAN_API_VAULT_PATH}:/mnt/vault
+    restart: unless-stopped 

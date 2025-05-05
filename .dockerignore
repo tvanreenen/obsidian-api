@@ -1,0 +1,23 @@
+# Version control
+.git
+.gitignore
+
+# Development and test files
+tests
+.pytest_cache
+pytest.ini
+.python-version
+
+# Documentation and assets
+README.md
+obsidian-api.webp
+obsidian-api.postman_collection.json
+
+# Build and configuration files
+Makefile
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Environment and secrets
+.env
