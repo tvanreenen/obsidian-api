@@ -1,6 +1,6 @@
-> ⚠️ **Warning**: This is an experimental API for personal use on a local network. It is not secured and should not be exposed to the internet or used in production environments.
-
 ![Obsidian API](obsidian-api.webp)
+
+> ⚠️ **Warning**: This is an experimental API for personal use on a local network. It is not secured and should not be exposed to the internet or used in production environments.
 
 # Obsidian API
 
