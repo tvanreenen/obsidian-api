@@ -78,9 +78,9 @@ Use the  `-v` flag to provide more detailed output.
 
 ## Reason for Creating
 
-I've enjoyed using the [Cursor](https://www.cursor.com/)-like [Obsidian Copilot](https://github.com/logancyang/obsidian-copilot) plugin to interact with my knowledge base, but ultimately, I wanted the flexibility to connect it to a wider range of tools—like [N8N](https://n8n.io/), [Claude Desktop](https://claude.ai/download), and various agent- and RAG-based experiments. Building an API was a natural first step toward that and an sounded like an fund hands-on exercise in its own right.
+I've enjoyed using the [Cursor](https://www.cursor.com/)-like [Obsidian Copilot](https://github.com/logancyang/obsidian-copilot) plugin to interact with my knowledge base, but ultimately, I wanted the flexibility to connect it to a wider range of tools—like [N8N](https://n8n.io/), [Claude Desktop](https://claude.ai/download), and various agent- and RAG-based experiments. Building an API was a natural first step toward that and an sounded like an fun hands-on exercise in its own right.
 
-Roadmap:
+## Roadmap
 - [x] Create a base local API for file and folders.
 - [x] Make deployable in a local Docker services.
 - [ ] Provide and authentication mechanism.
