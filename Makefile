@@ -1,20 +1,26 @@
-.PHONY: help run test clean
+.PHONY: help init serve test clean-cache clean-venv
 help:
-	@echo "Available targets:"
 	@echo "  help        - Show this help message"
-	@echo "  run         - Start the Obsidian API server"
+	@echo "  init        - Initialize the uv virtual environment"
+	@echo "  serve       - Start the Obsidian API server"
 	@echo "  test        - Run all tests"
-	@echo "  clean       - Clean up temporary directories"
+	@echo "  clean-cache - Clean up python cache directories"
+	@echo "  clean-venv  - Clean up the uv virtual environment"
 
-run:
-	@echo "Starting Obsidian API server..."
+init:
+	uv venv
+
+serve:
 	uv run uvicorn app.main:app --reload
 
 test:
-	@echo "Running all tests..."
 	uv run pytest
 
-clean:
-	@echo "Cleaning up temporary directories..."
+clean-cache:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type d -name ".pytest_cache" -exec rm -rf {} + 
+
+clean-venv:
+	deactivate 2>/dev/null || true
+	rm -rf .venv
+	uv venv
