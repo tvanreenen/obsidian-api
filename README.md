@@ -1,5 +1,7 @@
 > ⚠️ **Warning**: This is an experimental API for personal use on a local network. It is not secured and should not be exposed to the internet or used in production environments.
 
+![Obsidian API](obsidian-api.webp)
+
 # Obsidian API
 
 A personal RESTful API for managing markdown files and folders in your [Obsidian](https://obsidian.md/) vault.
