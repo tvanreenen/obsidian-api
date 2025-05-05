@@ -1,7 +1,5 @@
 ![Obsidian API](obsidian-api.webp)
 
-> ⚠️ **Warning**: This is an experimental API for personal use on a local network. It is not secured and should not be exposed to the internet or used in production environments.
-
 # Obsidian API
 
 A personal RESTful API for managing markdown files and folders in your [Obsidian](https://obsidian.md/) vault.
@@ -12,6 +10,8 @@ Built with:
 - [Uvicorn](https://github.com/encode/uvicorn) for the ASGI server
 - [Pytest](https://github.com/pytest-dev/pytest) for testing
 - [UV](https://github.com/astral-sh/uv) for package management
+
+> ⚠️ **Warning**: This is an experimental API for personal use on a local network. It is not secured and should not be exposed to the internet or used in production environments.
 
 ## Setup
 
