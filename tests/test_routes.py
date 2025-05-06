@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import pytest
 
 def test_list_files(client, auth_headers):
     response = client.get("/files", headers=auth_headers)
@@ -179,53 +180,27 @@ def test_paths_with_spaces(client, auth_headers):
     assert response.status_code == 200
     assert response.json()["content"] == "# Test Content"
 
-def test_unauthorized_access(client):
+@pytest.mark.parametrize("method, route, body", [
+    ("GET", "/files", None),
+    ("GET", "/folders", None),
+    ("GET", "/files/Notes/test1.md", None),
+    ("GET", "/folders/Notes", None),
+    ("POST", "/files/Notes/new_file.md", {"content": "# New File"}),
+    ("PUT", "/files/Notes/test1.md", {"content": "# Updated Content"}),
+    ("POST", "/folders/NewFolder", None),
+    ("PATCH", "/files/Notes/test1.md", {"new_path": "Notes/moved.md"}),
+    ("PATCH", "/folders/Projects", {"new_path": "Projects_moved"}),
+])
+@pytest.mark.parametrize("auth_type", ["none", "invalid"])
+def test_unauthorized_access(client, method, route, body, auth_type):
+    headers = {}
+    if auth_type == "invalid":
+        headers = {"Authorization": "Bearer invalid-token"}
 
-    def test_endpoints(headers, expected_status):
+    req = getattr(client, method.lower())
+    response = req(route, json=body, headers=headers) if body else req(route, headers=headers)
 
-        response = client.get("/files", headers=headers)
-        assert response.status_code == expected_status
-        
-        response = client.get("/folders", headers=headers)
-        assert response.status_code == expected_status
-        
-        response = client.get("/files/Notes/test1.md", headers=headers)
-        assert response.status_code == expected_status
-        
-        response = client.get("/folders/Notes", headers=headers)
-        assert response.status_code == expected_status
-        
-        response = client.post(
-            "/files/Notes/new_file.md",
-            json={"content": "# New File"},
-            headers=headers
-        )
-        assert response.status_code == expected_status
-        
-        response = client.put(
-            "/files/Notes/test1.md",
-            json={"content": "# Updated Content"},
-            headers=headers
-        )
-        assert response.status_code == expected_status
-        
-        response = client.post("/folders/NewFolder", headers=headers)
-        assert response.status_code == expected_status
-        
-        response = client.patch(
-            "/files/Notes/test1.md",
-            json={"new_path": "Notes/moved.md"},
-            headers=headers
-        )
-        assert response.status_code == expected_status
-        
-        response = client.patch(
-            "/folders/Projects",
-            json={"new_path": "Projects_moved"},
-            headers=headers
-        )
-        assert response.status_code == expected_status
-
-    test_endpoints({}, 403)
-    
-    test_endpoints({"Authorization": "Bearer invalid-token"}, 401)
+    expected_status = 401 if auth_type == "invalid" else 403
+    assert response.status_code == expected_status, (
+        f"{method} {route} with auth='{auth_type}' returned {response.status_code}, expected {expected_status}"
+    )
