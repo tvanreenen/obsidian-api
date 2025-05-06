@@ -1,4 +1,4 @@
-.PHONY: help init serve test docker-up docker-down clean-cache clean-venv
+.PHONY: help init serve test docker-up docker-down docker-build clean-cache clean-venv
 help:
 	@echo "  help         - Show this help message"
 	@echo "  init         - Initialize the uv virtual environment"
@@ -6,6 +6,7 @@ help:
 	@echo "  test         - Run all tests"
 	@echo "  docker-up    - Build and start the Docker containers"
 	@echo "  docker-down  - Stop and remove the Docker containers"
+	@echo "  docker-build - Build the Docker image"
 	@echo "  clean-cache  - Clean up python cache directories"
 	@echo "  clean-venv   - Clean up the uv virtual environment"
 
@@ -23,6 +24,9 @@ docker-up:
 
 docker-down:
 	docker compose down --rmi all
+
+docker-build:
+	docker build -t obsidian-api .
 
 clean-cache:
 	find . -type d -name "__pycache__" -exec rm -rf {} +

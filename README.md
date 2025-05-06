@@ -39,7 +39,7 @@ OBSIDIAN_VAULT_PATH="/path/to/your/obsidian/vault"
 
 Build and start the container:
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
 The API will be available at:
@@ -78,7 +78,7 @@ Use the  `-v` flag to provide more detailed output.
 
 ## Reason for Creating
 
-I've enjoyed using the [Cursor](https://www.cursor.com/)-like [Obsidian Copilot](https://github.com/logancyang/obsidian-copilot) plugin to interact with my knowledge base, but ultimately, I wanted the flexibility to connect it to a wider range of tools—like [N8N](https://n8n.io/), [Claude Desktop](https://claude.ai/download), and various agent- and RAG-based experiments. Building an API was a natural first step toward that and an sounded like an fun hands-on exercise in its own right.
+I've enjoyed using the [Cursor](https://www.cursor.com/)-like [Obsidian Copilot](https://github.com/logancyang/obsidian-copilot) plugin to interact with my knowledge base, but ultimately, I wanted the flexibility to connect it to a wider range of tools—like [N8N](https://n8n.io/), [Claude Desktop](https://claude.ai/download), and various agent- and RAG-based experiments. Building an API was a natural first step toward that and it sounded like an fun hands-on exercise in its own right.
 
 ## Roadmap
 - [x] Create a base local API for file and folders.
