@@ -28,6 +28,7 @@ def test_vault():
 def client(test_vault, monkeypatch):
     monkeypatch.setenv("OBSIDIAN_API_VAULT_PATH", test_vault)
     monkeypatch.setenv("OBSIDIAN_API_KEY", "test-api-key")
+    monkeypatch.setenv("OBSIDIAN_AUTH_ENABLED", "true")
     return TestClient(app)
 
 @pytest.fixture
