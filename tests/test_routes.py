@@ -161,22 +161,29 @@ def test_hidden_directories(client, auth_headers):
     response = client.get("/folders/.hidden", headers=auth_headers)
     assert response.status_code == 404
 
-def test_paths_with_spaces(client, auth_headers):
-    # Test creating and reading a file with spaces using raw path
+@pytest.mark.parametrize("path,encoded_path", [
+    ("Notes/Test File With Spaces.md", "Notes/Test%20File%20With%20Spaces.md"),
+    ("Notes/File With Multiple  Spaces.md", "Notes/File%20With%20Multiple%20%20Spaces.md"),
+    ("Notes/File-With-Hyphens.md", "Notes/File-With-Hyphens.md"),
+    ("Notes/File_With_Underscores.md", "Notes/File_With_Underscores.md"),
+])
+def test_paths_with_spaces(client, auth_headers, path, encoded_path):
+    # Test creating file with spaces
     response = client.post(
-        "/files/Notes/Test File With Spaces.md",
+        f"/files/{path}",
         json={"content": "# Test Content"},
         headers=auth_headers
     )
     assert response.status_code == 200
-    assert response.json()["message"] == "File created successfully: Notes/Test File With Spaces.md"
+    assert response.json()["message"] == f"File created successfully: {path}"
     
-    response = client.get("/files/Notes/Test File With Spaces.md", headers=auth_headers)
+    # Test reading file with raw path
+    response = client.get(f"/files/{path}", headers=auth_headers)
     assert response.status_code == 200
     assert response.json()["content"] == "# Test Content"
     
-    # Test that URL-encoded path works for the same file
-    response = client.get("/files/Notes/Test%20File%20With%20Spaces.md", headers=auth_headers)
+    # Test reading file with URL-encoded path
+    response = client.get(f"/files/{encoded_path}", headers=auth_headers)
     assert response.status_code == 200
     assert response.json()["content"] == "# Test Content"
 
