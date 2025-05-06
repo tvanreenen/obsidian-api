@@ -101,7 +101,7 @@ I've enjoyed using the [Cursor](https://www.cursor.com/)-like [Obsidian Copilot]
 ## Roadmap
 - [x] Create a base local API for file and folders.
 - [x] Make deployable in a local Docker services.
-- [x] Provide and authentication mechanism.
+- [x] Provide an authentication mechanism.
 - [ ] Implement a MCP server for the API.
 - [ ] Add additional endpoints like DELETE and perhaps MERGE. But I'd want configuration or authorization to be in plact to control access.
 - [ ] Provide file/folder metadata. Perhaps integrating file frontmatter into metadata.
