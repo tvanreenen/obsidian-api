@@ -18,9 +18,10 @@ Built with:
 
 ### Local Environment
 
-Set your Obsidian vault path:
+Set your Obsidian vault path and API key:
 ```bash
 export OBSIDIAN_API_VAULT_PATH="/path/to/your/obsidian/vault"
+export OBSIDIAN_API_KEY="your-secret-api-key"  # Required for authentication
 ```
 
 Start the server:
@@ -32,9 +33,10 @@ The API will be available at `http://localhost:8000` with interactive documentat
 
 ### Docker Environment
 
-Create a `.env` file in the project root with your Obsidian vault path:
+Create a `.env` file in the project root with your Obsidian vault path and API key:
 ```bash
 OBSIDIAN_VAULT_PATH="/path/to/your/obsidian/vault"
+OBSIDIAN_API_KEY="your-secret-api-key"  # Required for authentication
 ```
 
 Build and start the container:
@@ -48,6 +50,16 @@ The API will be available at:
 - `http://obsidian-api:8000` (from other containers in the same Docker network)
 
 Note: The container mounts your Obsidian vault as a volume at `/mnt/vault` inside the container.
+
+## Authentication
+
+The API uses Bearer token authentication. All endpoints require a valid API key to be provided in the `Authorization` header:
+
+```
+Authorization: Bearer your-secret-api-key
+```
+
+You can set your API key using the `OBSIDIAN_API_KEY` environment variable. Make sure to use a strong, unique key and keep it secure.
 
 ## API Endpoints
 
@@ -83,7 +95,7 @@ I've enjoyed using the [Cursor](https://www.cursor.com/)-like [Obsidian Copilot]
 ## Roadmap
 - [x] Create a base local API for file and folders.
 - [x] Make deployable in a local Docker services.
-- [ ] Provide and authentication mechanism.
+- [x] Provide and authentication mechanism.
 - [ ] Implement a MCP server for the API.
 - [ ] Add additional endpoints like DELETE and perhaps MERGE. But I'd want configuration or authorization to be in plact to control access.
 - [ ] Provide file/folder metadata. Perhaps integrating file frontmatter into metadata.
