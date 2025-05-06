@@ -1,7 +1,6 @@
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import os
-from typing import Optional
 
 security = HTTPBearer()
 

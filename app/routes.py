@@ -74,7 +74,7 @@ async def create_file(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating file: {str(e)}")
 
-@router.patch("/files/{vault_file_path:path}", summary="Move/Rename a file")
+@router.patch("/files/{vault_file_path:path}", summary="Move/Rename a file", dependencies=[Depends(verify_token)])
 async def move_file(
     vault_file_path: str,
     move_path: NewPathBody,
