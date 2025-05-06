@@ -2,7 +2,8 @@ from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import os
 
-security = HTTPBearer()
+auth_enabled = os.getenv("OBSIDIAN_AUTH_ENABLED", "false").lower() == "true"
+security = HTTPBearer(auto_error=auth_enabled)
 
 def get_api_key() -> str:
     """Get the API key from environment variable."""
@@ -15,7 +16,10 @@ def get_api_key() -> str:
     return api_key
 
 async def verify_token(credentials: HTTPAuthorizationCredentials = Security(security)) -> bool:
-    """Verify the bearer token against the configured API key."""
+    """Verify the bearer token against the configured API key if authentication is enabled."""
+    if not auth_enabled:
+        return True
+        
     api_key = get_api_key()
     
     if credentials.credentials != api_key:

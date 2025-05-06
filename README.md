@@ -12,32 +12,26 @@ Built with:
 - [UV](https://github.com/astral-sh/uv) for package management
 - [Docker](https://www.docker.com/) for containerization
 
-> ⚠️ **Warning**: This is an experimental API for personal use on a local network. It is not secured and should not be exposed to the internet or used in production environments.
-
 ## Setup
+
+Create a `.env` file in the project root with your Obsidian vault path and API key:
+```bash
+OBSIDIAN_VAULT_PATH="/path/to/your/obsidian/vault"
+OBSIDIAN_AUTH_ENABLED="true"  # Set to "true" to enable authentication. Default is "false".
+OBSIDIAN_API_KEY="your-secret-api-key"  # Required if authentication is enabled
+```
 
 ### Local Environment
 
-Set your Obsidian vault path and API key:
-```bash
-export OBSIDIAN_API_VAULT_PATH="/path/to/your/obsidian/vault"
-export OBSIDIAN_API_KEY="your-secret-api-key"  # Required for authentication
-```
-
 Start the server:
 ```bash
+source .env
 uv run uvicorn app.main:app --reload
 ```
 
 The API will be available at `http://localhost:8000` with interactive documentation at `http://localhost:8000/docs`.
 
 ### Docker Environment
-
-Create a `.env` file in the project root with your Obsidian vault path and API key:
-```bash
-OBSIDIAN_VAULT_PATH="/path/to/your/obsidian/vault"
-OBSIDIAN_API_KEY="your-secret-api-key"  # Required for authentication
-```
 
 Build and start the container:
 ```bash
@@ -51,15 +45,27 @@ The API will be available at:
 
 Note: The container mounts your Obsidian vault as a volume at `/mnt/vault` inside the container.
 
-## Authentication
+## Security
 
-The API uses Bearer token authentication. All endpoints require a valid API key to be provided in the `Authorization` header:
+### Authentication
 
+The API uses Bearer token authentication. By default, authentication is disabled, and no API key is required. To enable authentication, set the following environment variable:
+
+```bash
+OBSIDIAN_AUTH_ENABLED=true
 ```
+
+Once enabled, all endpoints require a valid API key in the `Authorization` header:
+
+```http
 Authorization: Bearer your-secret-api-key
 ```
 
-You can set your API key using the `OBSIDIAN_API_KEY` environment variable. Make sure to use a strong, unique key and keep it secure.
+Set your API key using the `OBSIDIAN_API_KEY` environment variable. Use a strong, unique key and do not share it publicly.
+
+### HTTPS Support
+
+> ⚠️ **Warning**: This API does not provide HTTPS on its own. Even with bearer authentication enabled, you must use a secure reverse proxy (e.g., NGINX, Traefik, or Cloudflare Tunnel) to provide HTTPS before exposing the server to the public internet. This protects both credentials and sensitive data from interception.
 
 ## API Endpoints
 
