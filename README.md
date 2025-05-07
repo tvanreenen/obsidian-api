@@ -12,30 +12,26 @@ Built with:
 - [UV](https://github.com/astral-sh/uv) for package management
 - [Docker](https://www.docker.com/) for containerization
 
-> ⚠️ **Warning**: This is an experimental API for personal use on a local network. It is not secured and should not be exposed to the internet or used in production environments.
-
 ## Setup
+
+Create a `.env` file in the project root with your Obsidian vault path and API key:
+```bash
+OBSIDIAN_VAULT_PATH="/path/to/your/obsidian/vault"
+OBSIDIAN_AUTH_ENABLED="true"  # Set to "true" to enable authentication. Default is "false".
+OBSIDIAN_API_KEY="your-secret-api-key"  # Required if authentication is enabled
+```
 
 ### Local Environment
 
-Set your Obsidian vault path:
-```bash
-export OBSIDIAN_API_VAULT_PATH="/path/to/your/obsidian/vault"
-```
-
 Start the server:
 ```bash
+source .env
 uv run uvicorn app.main:app --reload
 ```
 
 The API will be available at `http://localhost:8000` with interactive documentation at `http://localhost:8000/docs`.
 
 ### Docker Environment
-
-Create a `.env` file in the project root with your Obsidian vault path:
-```bash
-OBSIDIAN_VAULT_PATH="/path/to/your/obsidian/vault"
-```
 
 Build and start the container:
 ```bash
@@ -48,6 +44,39 @@ The API will be available at:
 - `http://obsidian-api:8000` (from other containers in the same Docker network)
 
 Note: The container mounts your Obsidian vault as a volume at `/mnt/vault` inside the container.
+
+## Security
+
+### Authentication
+
+By default, authentication is disabled and no API key is required. To enable authentication, set the following environment variable:
+
+```bash
+OBSIDIAN_AUTH_ENABLED=true
+```
+
+You can generate your API key using any secure method, such as `python -c "import secrets; print(secrets.token_urlsafe(32))"`, `openssl rand -hex 32`, or a password manager. Set the generated key using the following environment variable:
+
+```bash
+OBSIDIAN_API_KEY=your-secret-api-key
+```
+
+Once authentication is enabled, all endpoints will require the generated API key to be passed as a Bearer token in the request header:
+
+```http
+Authorization: Bearer your-secret-api-key
+```
+
+Notes:
+
+* This is a basic, static, single-token authentication method.
+* All clients must use the same key.
+* There are no scopes or access limitations.
+* Token rotation and revocation are not handled automatically—you must manage them manually.
+
+### HTTPS Support
+
+> ⚠️ **Warning**: This API does not provide HTTPS natively. To secure your deployment and prevent credentials and sensitive data from being transmitted in plaintext over the internet, you must place it behind a secure reverse proxy (e.g., NGINX, Traefik, or Cloudflare Tunnel) that handles HTTPS.
 
 ## API Endpoints
 
@@ -83,7 +112,7 @@ I've enjoyed using the [Cursor](https://www.cursor.com/)-like [Obsidian Copilot]
 ## Roadmap
 - [x] Create a base local API for file and folders.
 - [x] Make deployable in a local Docker services.
-- [ ] Provide and authentication mechanism.
+- [x] Provide an authentication mechanism.
 - [ ] Implement a MCP server for the API.
 - [ ] Add additional endpoints like DELETE and perhaps MERGE. But I'd want configuration or authorization to be in plact to control access.
 - [ ] Provide file/folder metadata. Perhaps integrating file frontmatter into metadata.

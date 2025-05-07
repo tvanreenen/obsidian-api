@@ -1,6 +1,7 @@
 import os
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from typing import Annotated
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from .models import FileContentBody, NewPathBody
 from .validation import (
@@ -12,8 +13,10 @@ from .validation import (
     get_vault_path,
     is_hidden_directory
 )
+from .dependencies import ObsidianHTTPBearer
 
 router = APIRouter()
+obsidian_security = ObsidianHTTPBearer()
 
 def _walk_vault(filter_func):
     vault_path = get_vault_path()
@@ -39,11 +42,11 @@ def _walk_vault(filter_func):
     return items
 
 # Files endpoints
-@router.get("/files", summary="List markdown files")
+@router.get("/files", summary="List markdown files", dependencies=[Depends(obsidian_security)])
 def list_files():
     return _walk_vault(lambda root, dirs, files: [file for file in files if file.endswith(".md")])
 
-@router.get("/files/{vault_file_path:path}", summary="Read a specific file")
+@router.get("/files/{vault_file_path:path}", summary="Read a specific file", dependencies=[Depends(obsidian_security)])
 async def read_file(
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
 ):
@@ -56,7 +59,7 @@ async def read_file(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading file: {str(e)}")
 
-@router.post("/files/{vault_file_path:path}", summary="Create a new file")
+@router.post("/files/{vault_file_path:path}", summary="Create a new file", dependencies=[Depends(obsidian_security)])
 async def create_file(
     vault_file_path: str,
     file_content: FileContentBody,
@@ -73,7 +76,7 @@ async def create_file(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating file: {str(e)}")
 
-@router.patch("/files/{vault_file_path:path}", summary="Move/Rename a file")
+@router.patch("/files/{vault_file_path:path}", summary="Move/Rename a file", dependencies=[Depends(obsidian_security)])
 async def move_file(
     vault_file_path: str,
     move_path: NewPathBody,
@@ -89,7 +92,7 @@ async def move_file(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error moving file: {str(e)}")
 
-@router.put("/files/{vault_file_path:path}", summary="Update an existing file")
+@router.put("/files/{vault_file_path:path}", summary="Update an existing file", dependencies=[Depends(obsidian_security)])
 async def update_file(
     vault_file_path: str,
     file_content: FileContentBody,
@@ -105,11 +108,11 @@ async def update_file(
         raise HTTPException(status_code=500, detail=f"Error updating file: {str(e)}")
 
 # Folders endpoints
-@router.get("/folders", summary="List all folders")
+@router.get("/folders", summary="List all folders", dependencies=[Depends(obsidian_security)])
 def list_folders():
     return _walk_vault(lambda root, dirs, files: dirs)
 
-@router.get("/folders/{vault_folder_path:path}", summary="List files in a specific folder")
+@router.get("/folders/{vault_folder_path:path}", summary="List files in a specific folder", dependencies=[Depends(obsidian_security)])
 async def list_folder_files(
     full_folder_path: Annotated[str, Depends(validate_existing_folder)]
 ):
@@ -126,7 +129,7 @@ async def list_folder_files(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error listing folder contents: {str(e)}")
 
-@router.post("/folders/{vault_folder_path:path}", summary="Create a new folder")
+@router.post("/folders/{vault_folder_path:path}", summary="Create a new folder", dependencies=[Depends(obsidian_security)])
 async def create_folder(
     vault_folder_path: str,
     full_folder_path: Annotated[str, Depends(validate_new_folder)]
@@ -139,7 +142,7 @@ async def create_folder(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating folder: {str(e)}")
 
-@router.patch("/folders/{vault_folder_path:path}", summary="Move/Rename a folder")
+@router.patch("/folders/{vault_folder_path:path}", summary="Move/Rename a folder", dependencies=[Depends(obsidian_security)])
 async def move_folder(
     vault_folder_path: str,
     move_path: NewPathBody
