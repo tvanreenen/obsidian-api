@@ -49,23 +49,34 @@ Note: The container mounts your Obsidian vault as a volume at `/mnt/vault` insid
 
 ### Authentication
 
-The API uses Bearer token authentication. By default, authentication is disabled, and no API key is required. To enable authentication, set the following environment variable:
+By default, authentication is disabled and no API key is required. To enable authentication, set the following environment variable:
 
 ```bash
 OBSIDIAN_AUTH_ENABLED=true
 ```
 
-Once enabled, all endpoints require a valid API key in the `Authorization` header:
+You can generate your API key using any secure method, such as `openssl rand -hex 32` or a password manager. Set the generated key using the following environment variable:
+
+```bash
+OBSIDIAN_API_KEY=your-secret-api-key
+```
+
+Once authentication is enabled, all endpoints will require the generated API key to be passed as a Bearer token in the request header:
 
 ```http
 Authorization: Bearer your-secret-api-key
 ```
 
-Set your API key using the `OBSIDIAN_API_KEY` environment variable. Use a strong, unique key and do not share it publicly.
+Notes:
+
+* This is a basic, static, single-token authentication method.
+* All clients must use the same key.
+* There are no scopes or access limitations.
+* Token rotation and revocation are not handled automatically—you must manage them manually.
 
 ### HTTPS Support
 
-> ⚠️ **Warning**: This API does not provide HTTPS on its own. Even with bearer authentication enabled, you must use a secure reverse proxy (e.g., NGINX, Traefik, or Cloudflare Tunnel) to provide HTTPS before exposing the server to the public internet. This protects both credentials and sensitive data from interception.
+> ⚠️ **Warning**: This API does not provide HTTPS natively. To secure your deployment, you must place it behind a secure reverse proxy (e.g., NGINX, Traefik, or Cloudflare Tunnel) that handles HTTPS. This is essential to prevent credentials and sensitive data from being transmitted in plaintext over the internet.
 
 ## API Endpoints
 
