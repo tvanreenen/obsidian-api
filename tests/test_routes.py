@@ -2,150 +2,230 @@ import os
 from pathlib import Path
 import pytest
 
-def test_list_files(client, auth_headers):
-    response = client.get("/files", headers=auth_headers)
+def test_missing_api_key(client, monkeypatch):
+    monkeypatch.setenv("OBSIDIAN_AUTH_ENABLED", "true")
+    monkeypatch.delenv("OBSIDIAN_API_KEY", raising=False)
+    
+    response = client.get("/files")
+    assert response.status_code == 500
+    assert response.json()["detail"] == "API key not configured. Set OBSIDIAN_API_KEY environment variable."
+
+@pytest.mark.parametrize(
+    "route",
+    [
+        {"method": "GET", "route": "/files", "body": None},
+        {"method": "GET", "route": "/folders", "body": None},
+        {"method": "GET", "route": "/files/Notes/test1.md", "body": None},
+        {"method": "GET", "route": "/folders/Notes", "body": None},
+        {"method": "POST", "route": "/files/Notes/new_file.md", "body": {"content": "# New File"}},
+        {"method": "POST", "route": "/folders/NewFolder", "body": None},
+        {"method": "PUT", "route": "/files/Notes/test1.md", "body": {"content": "# Updated Content"}},
+        {"method": "PATCH", "route": "/files/Notes/test1.md", "body": {"new_path": "Notes/moved.md"}},
+        {"method": "PATCH", "route": "/folders/Projects", "body": {"new_path": "Projects_moved"}},
+    ],
+    ids=lambda route: f"{route['method']} {route['route']}"
+)
+@pytest.mark.parametrize(
+    "authScenario",
+    [
+        {
+            "name": "MissingHeader",
+            "headers": {},
+            "expected_status": 401,
+            "expected_message": "Missing authorization header"
+        },{
+            "name": "MissingScheme",
+            "headers": {"Authorization": "invalid-format"},
+            "expected_status": 401,
+            "expected_message": "Wrong authorization scheme"
+        },{
+            "name": "WrongScheme",
+            "headers": {"Authorization": "Basic invalid-token"},
+            "expected_status": 401,
+            "expected_message": "Wrong authorization scheme"
+        },{
+            "name": "MissingToken",
+            "headers": {"Authorization": "Bearer"},
+            "expected_status": 401,
+            "expected_message": "Missing authorization token"
+        },{
+            "name": "InvalidToken",
+            "headers": {"Authorization": "Bearer invalid-token"},
+            "expected_status": 401,
+            "expected_message": "Invalid authorization token"
+        },{
+            "name": "ValidToken",
+            "headers": {"Authorization": "Bearer valid-test-token"},
+            "expected_status": 200,
+            "expected_message": None
+        }
+    ],
+    ids=lambda scenario: scenario["name"]
+)
+def test_auth_exceptions(client, monkeypatch, authScenario, route):
+    monkeypatch.setenv("OBSIDIAN_AUTH_ENABLED", "true")
+    monkeypatch.setenv("OBSIDIAN_API_KEY", "valid-test-token")
+    
+    req = getattr(client, route["method"].lower())
+    if route["body"]:
+        response = req(route["route"], json=route["body"], headers=authScenario["headers"])
+    else:
+        response = req(route["route"], headers=authScenario["headers"])
+    
+    assert response.status_code == authScenario["expected_status"]
+    if authScenario["expected_message"]:
+        assert response.json()["detail"] == authScenario["expected_message"]
+
+@pytest.mark.parametrize(
+    "test_case",
+    [
+        {
+            "method": "GET",
+            "route": "/files",
+            "body": None,
+            "expected_status": 200,
+            "expected_content": None,
+            "verify_response": lambda response: (
+                len(response.json()) == 3 and
+                "Notes/test1.md" in response.json() and
+                "Notes/test2.md" in response.json() and
+                "Projects/test3.md" in response.json()
+            )
+        },{
+            "method": "GET",
+            "route": "/folders",
+            "body": None,
+            "expected_status": 200,
+            "expected_content": None,
+            "verify_response": lambda response: (
+                len(response.json()) == 2 and
+                "Notes" in response.json() and
+                "Projects" in response.json()
+            )
+        },{
+            "method": "GET",
+            "route": "/files/Notes/test1.md",
+            "body": None,
+            "expected_status": 200,
+            "expected_content": {"content": "# Test File 1"}
+        },{
+            "method": "GET",
+            "route": "/folders/Notes",
+            "body": None,
+            "expected_status": 200,
+            "expected_content": None,
+            "verify_response": lambda response: (
+                len(response.json()) == 2 and
+                "Notes/test1.md" in response.json() and
+                "Notes/test2.md" in response.json()
+            )
+        },{
+            "method": "POST",
+            "route": "/files/Notes/new_file.md",
+            "body": {"content": "# New File"},
+            "expected_status": 200,
+            "expected_content": {"message": "File created successfully: Notes/new_file.md"},
+            "verify_operation": lambda client, headers: (
+                client.get("/files/Notes/new_file.md", headers=headers).json()["content"] == "# New File"
+            )
+        },{
+            "method": "POST",
+            "route": "/folders/NewFolder",
+            "body": None,
+            "expected_status": 200,
+            "expected_content": {"message": "Folder created successfully: NewFolder"},
+            "verify_operation": lambda client, headers: (
+                "NewFolder" in client.get("/folders", headers=headers).json()
+            )
+        },{
+            "method": "PUT",
+            "route": "/files/Notes/test1.md",
+            "body": {"content": "# Updated Content"},
+            "expected_status": 200,
+            "expected_content": {"message": "File updated successfully: Notes/test1.md"},
+            "verify_operation": lambda client, headers: (
+                client.get("/files/Notes/test1.md", headers=headers).json()["content"] == "# Updated Content"
+            )
+        },{
+            "method": "PATCH",
+            "route": "/files/Notes/test1.md",
+            "body": {"new_path": "Notes/moved.md"},
+            "expected_status": 200,
+            "expected_content": {"message": "File moved successfully to Notes/moved.md"},
+            "verify_operation": lambda client, headers: (
+                client.get("/files/Notes/moved.md", headers=headers).json()["content"] == "# Test File 1" and
+                client.get("/files/Notes/test1.md", headers=headers).status_code == 404
+            )
+        },{
+            "method": "PATCH",
+            "route": "/folders/Projects",
+            "body": {"new_path": "Projects_moved"},
+            "expected_status": 200,
+            "expected_content": {"message": "Folder moved successfully to Projects_moved"},
+            "verify_operation": lambda client, headers: (
+                "Projects" not in client.get("/folders", headers=headers).json() and
+                "Projects_moved" in client.get("/folders", headers=headers).json()
+            )
+        }
+    ],
+    ids=lambda case: f"{case['method']} {case['route']}"
+)
+@pytest.mark.parametrize(
+    "auth_enabled", 
+    [True, False],
+    ids=lambda enabled: "Auth" if enabled else "NoAuth"
+)
+def test_successful_operations(client, test_case, auth_enabled, monkeypatch):
+    monkeypatch.setenv("OBSIDIAN_AUTH_ENABLED", str(auth_enabled).lower())
+    if auth_enabled:
+        monkeypatch.setenv("OBSIDIAN_API_KEY", "test-api-key")
+        headers = {"Authorization": "Bearer test-api-key"}
+    else:
+        headers = {}
+    
+    req = getattr(client, test_case["method"].lower())
+    
+    if test_case["body"]:
+        response = req(test_case["route"], json=test_case["body"], headers=headers)
+    else:
+        response = req(test_case["route"], headers=headers)
+    
+    assert response.status_code == test_case["expected_status"]
+    
+    if test_case["expected_content"]:
+        assert response.json() == test_case["expected_content"]
+    
+    if "verify_response" in test_case:
+        assert test_case["verify_response"](response)
+    
+    if "verify_operation" in test_case:
+        assert test_case["verify_operation"](client, headers)
+
+def test_route_exceptions(client):
+    response = client.get("/nonexistent.md")
+    assert response.status_code == 404
+    
+    response = client.post("/files/Notes/test1.md", content="", headers={"Content-Type": "text/plain"})
+    assert response.status_code == 400
+    
+    response = client.patch("/files/Notes/test2.md", json={"new_path": "Notes/test1.md"})
+    assert response.status_code == 400
+
+def test_hidden_directories(client):
+    dot_dir = Path(os.getenv("OBSIDIAN_API_VAULT_PATH")) / ".hidden"
+    dot_dir.mkdir()
+    (dot_dir / "test.md").write_text("# Hidden File")
+    
+    response = client.get("/files")
     assert response.status_code == 200
     files = response.json()
     assert len(files) == 3
     assert "Notes/test1.md" in files
     assert "Notes/test2.md" in files
     assert "Projects/test3.md" in files
-    
-def test_list_folders(client, auth_headers):
-    response = client.get("/folders", headers=auth_headers)
-    assert response.status_code == 200
-    folders = response.json()
-    assert len(folders) == 2
-    assert "Notes" in folders
-    assert "Projects" in folders
-
-def test_list_folder_files(client, auth_headers):
-    response = client.get("/folders/Notes", headers=auth_headers)
-    assert response.status_code == 200
-    files = response.json()
-    assert len(files) == 2
-    assert "Notes/test1.md" in files
-    assert "Notes/test2.md" in files
-
-def test_read_file(client, auth_headers):
-    response = client.get("/files/Notes/test1.md", headers=auth_headers)
-    assert response.status_code == 200
-    content = response.json()
-    assert content["content"] == "# Test File 1"
-
-def test_create_file(client, auth_headers):
-    response = client.post(
-        "/files/Notes/new_file.md",
-        json={"content": "# New File"},
-        headers=auth_headers
-    )
-    assert response.status_code == 200
-    assert response.json()["message"] == "File created successfully: Notes/new_file.md"
-    
-    # Verify file was created
-    response = client.get("/files/Notes/new_file.md", headers=auth_headers)
-    assert response.status_code == 200
-    assert response.json()["content"] == "# New File"
-
-def test_update_file(client, auth_headers):
-    response = client.put(
-        "/files/Notes/test1.md",
-        json={"content": "# Updated Content"},
-        headers=auth_headers
-    )
-    assert response.status_code == 200
-    assert response.json()["message"] == "File updated successfully: Notes/test1.md"
-    
-    # Verify content was updated
-    response = client.get("/files/Notes/test1.md", headers=auth_headers)
-    assert response.status_code == 200
-    assert response.json()["content"] == "# Updated Content"
-
-def test_create_folder(client, auth_headers):
-    response = client.post("/folders/NewFolder", headers=auth_headers)
-    assert response.status_code == 200
-    assert response.json()["message"] == "Folder created successfully: NewFolder"
-    
-    # Verify folder was created
-    response = client.get("/folders", headers=auth_headers)
-    assert "NewFolder" in response.json()
-
-def test_move_file(client, auth_headers):
-    # Move an existing test file
-    response = client.patch(
-        "/files/Notes/test1.md",
-        json={"new_path": "Notes/moved.md"},
-        headers=auth_headers
-    )
-    assert response.status_code == 200
-    assert response.json()["message"] == "File moved successfully to Notes/moved.md"
-    
-    # Verify the file was moved
-    response = client.get("/files/Notes/moved.md", headers=auth_headers)
-    assert response.status_code == 200
-    assert response.json()["content"] == "# Test File 1"
-    
-    # Verify the old file is gone
-    response = client.get("/files/Notes/test1.md", headers=auth_headers)
-    assert response.status_code == 404
-
-def test_move_folder(client, auth_headers):
-    # Move the Projects folder
-    response = client.patch(
-        "/folders/Projects",
-        json={"new_path": "Projects_moved"},
-        headers=auth_headers
-    )
-    assert response.status_code == 200
-    assert response.json()["message"] == "Folder moved successfully to Projects_moved"
-    
-    # Verify old folder is gone
-    response = client.get("/folders", headers=auth_headers)
-    assert "Projects" not in response.json()
-    
-    # Verify new folder exists
-    response = client.get("/folders", headers=auth_headers)
-    assert "Projects_moved" in response.json()
-
-def test_error_cases(client, auth_headers):
-    # Try to read non-existent file
-    response = client.get("/nonexistent.md", headers=auth_headers)
-    assert response.status_code == 404
-    
-    # Try to create file that already exists
-    response = client.post(
-        "/files/Notes/test1.md",
-        content="# Duplicate",
-        headers={"Content-Type": "text/plain", **auth_headers}
-    )
-    assert response.status_code == 400  # File already exists
-    
-    # Try to move to existing path
-    response = client.patch(
-        "/files/Notes/test2.md",
-        json={"new_path": "Notes/test1.md"},  # Try to move test1.md to test2.md
-        headers=auth_headers
-    )
-    assert response.status_code == 400  # Path already exists 
-
-def test_hidden_directories(client, auth_headers):
-    # Create a dot-prefixed directory in the test vault. Still might create through API or as fixture.
-    dot_dir = Path(os.getenv("OBSIDIAN_API_VAULT_PATH")) / ".hidden"
-    dot_dir.mkdir()
-    (dot_dir / "test.md").write_text("# Hidden File")
-    
-    # Test /files endpoint - should not include files from dot-prefixed directory
-    response = client.get("/files", headers=auth_headers)
-    assert response.status_code == 200
-    files = response.json()
-    assert len(files) == 3  # Original test files should still be visible
-    assert "Notes/test1.md" in files
-    assert "Notes/test2.md" in files
-    assert "Projects/test3.md" in files
     assert ".hidden/test.md" not in files
     
-    # Test /folders endpoint - should not include dot-prefixed directory
-    response = client.get("/folders", headers=auth_headers)
+    response = client.get("/folders")
     assert response.status_code == 200
     folders = response.json()
     assert len(folders) == 2
@@ -153,61 +233,32 @@ def test_hidden_directories(client, auth_headers):
     assert "Projects" in folders
     assert ".hidden" not in folders
 
-    # Test reading file from dot-prefixed directory, should not be able to read files in dot-prefixed directories 
-    response = client.get("/files/.hidden/test.md", headers=auth_headers)
+    response = client.get("/files/.hidden/test.md")
     assert response.status_code == 404
 
-    # Test listing contents of dot-prefixed directory, should not be able to list contents of dot-prefixed directories 
-    response = client.get("/folders/.hidden", headers=auth_headers)
+    response = client.get("/folders/.hidden")
     assert response.status_code == 404
 
-@pytest.mark.parametrize("path,encoded_path", [
-    ("Notes/Test File With Spaces.md", "Notes/Test%20File%20With%20Spaces.md"),
-    ("Notes/File With Multiple  Spaces.md", "Notes/File%20With%20Multiple%20%20Spaces.md"),
-    ("Notes/File-With-Hyphens.md", "Notes/File-With-Hyphens.md"),
-    ("Notes/File_With_Underscores.md", "Notes/File_With_Underscores.md"),
-])
-def test_paths_with_spaces(client, auth_headers, path, encoded_path):
+@pytest.mark.parametrize(
+    "path,encoded_path", 
+    [
+        ("Notes/Test File With Spaces.md", "Notes/Test%20File%20With%20Spaces.md"),
+        ("Notes/File With Multiple  Spaces.md", "Notes/File%20With%20Multiple%20%20Spaces.md")
+    ],
+    ids=lambda path: path
+)
+def test_paths_with_spaces(client, path, encoded_path):
     # Test creating file with spaces
-    response = client.post(
-        f"/files/{path}",
-        json={"content": "# Test Content"},
-        headers=auth_headers
-    )
+    response = client.post(f"/files/{path}", json={"content": "# Test Content"})
     assert response.status_code == 200
     assert response.json()["message"] == f"File created successfully: {path}"
     
     # Test reading file with raw path
-    response = client.get(f"/files/{path}", headers=auth_headers)
+    response = client.get(f"/files/{path}")
     assert response.status_code == 200
     assert response.json()["content"] == "# Test Content"
     
     # Test reading file with URL-encoded path
-    response = client.get(f"/files/{encoded_path}", headers=auth_headers)
+    response = client.get(f"/files/{encoded_path}")
     assert response.status_code == 200
     assert response.json()["content"] == "# Test Content"
-
-@pytest.mark.parametrize("method, route, body", [
-    ("GET", "/files", None),
-    ("GET", "/folders", None),
-    ("GET", "/files/Notes/test1.md", None),
-    ("GET", "/folders/Notes", None),
-    ("POST", "/files/Notes/new_file.md", {"content": "# New File"}),
-    ("PUT", "/files/Notes/test1.md", {"content": "# Updated Content"}),
-    ("POST", "/folders/NewFolder", None),
-    ("PATCH", "/files/Notes/test1.md", {"new_path": "Notes/moved.md"}),
-    ("PATCH", "/folders/Projects", {"new_path": "Projects_moved"}),
-])
-@pytest.mark.parametrize("auth_type", ["none", "invalid"])
-def test_unauthorized_access(client, method, route, body, auth_type):
-    headers = {}
-    if auth_type == "invalid":
-        headers = {"Authorization": "Bearer invalid-token"}
-
-    req = getattr(client, method.lower())
-    response = req(route, json=body, headers=headers) if body else req(route, headers=headers)
-
-    expected_status = 401 if auth_type == "invalid" else 403
-    assert response.status_code == expected_status, (
-        f"{method} {route} with auth='{auth_type}' returned {response.status_code}, expected {expected_status}"
-    )

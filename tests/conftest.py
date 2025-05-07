@@ -6,7 +6,6 @@ from app.main import app
 
 @pytest.fixture
 def test_vault():
-
     with tempfile.TemporaryDirectory() as tmp_dir:
         # Create some test files and folders
         notes_dir = os.path.join(tmp_dir, "Notes")
@@ -27,10 +26,4 @@ def test_vault():
 @pytest.fixture
 def client(test_vault, monkeypatch):
     monkeypatch.setenv("OBSIDIAN_API_VAULT_PATH", test_vault)
-    monkeypatch.setenv("OBSIDIAN_API_KEY", "test-api-key")
-    monkeypatch.setenv("OBSIDIAN_AUTH_ENABLED", "true")
     return TestClient(app)
-
-@pytest.fixture
-def auth_headers():
-    return {"Authorization": "Bearer test-api-key"} 
