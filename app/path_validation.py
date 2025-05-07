@@ -9,7 +9,6 @@ ensuring paths are valid, exist (or don't exist) as required, and are within the
 import os
 from fastapi import HTTPException
 from typing import Optional, Literal
-from pathlib import Path
 from app.utils import get_vault_path, is_hidden_directory
 
 def _get_full_path(vault_relative_path: str) -> str:

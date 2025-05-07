@@ -1,3 +1,10 @@
+"""
+Authentication dependencies for FastAPI endpoints.
+
+These dependencies handle API key authentication for the Obsidian API.
+They validate bearer tokens against the configured API key and can be
+injected into FastAPI endpoints using Depends().
+"""
 import os
 from fastapi import HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials

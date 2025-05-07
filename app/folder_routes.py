@@ -2,12 +2,12 @@ import os
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Annotated
 from app.models import NewPathBody
-from app.validation import (
+from app.path_validation import (
     validate_existing_folder,
     validate_new_folder,
     validate_destination_path
 )
-from app.dependencies import ObsidianHTTPBearer
+from app.authentication import ObsidianHTTPBearer
 from app.utils import walk_vault, get_vault_path
 
 folder_router = APIRouter(
