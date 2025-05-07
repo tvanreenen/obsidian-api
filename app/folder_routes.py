@@ -10,18 +10,26 @@ from app.path_validation import (
 from app.utils import walk_vault, get_vault_path
 from app.models import NewPathBody
 
+obsidian_security = ObsidianHTTPBearer()
 folder_router = APIRouter(
     prefix="/folders",
-    tags=["folders"]
+    tags=["folders"],
+    dependencies=[Depends(obsidian_security)]
 )
 
-obsidian_security = ObsidianHTTPBearer()
-
-@folder_router.get("/", summary="List all folders", dependencies=[Depends(obsidian_security)])
+@folder_router.get(
+    "/", 
+    summary="List all folders",
+    response_description='List all of the folders in your vault.'
+)
 def list_folders():
     return walk_vault(lambda root, dirs, files: dirs)
 
-@folder_router.get("/{vault_folder_path:path}", summary="List files in a specific folder", dependencies=[Depends(obsidian_security)])
+@folder_router.get(
+    "/{vault_folder_path:path}", 
+    summary="List files in a folder",
+    response_description='List all of the markdown files in the specified folder.'
+)
 async def list_folder_files(
     full_folder_path: Annotated[str, Depends(validate_existing_folder)]
 ):
@@ -38,7 +46,11 @@ async def list_folder_files(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error listing folder contents: {str(e)}")
 
-@folder_router.post("/{vault_folder_path:path}", summary="Create a new folder", dependencies=[Depends(obsidian_security)])
+@folder_router.post(
+    "/{vault_folder_path:path}", 
+    summary="Create a new folder",
+    response_description='Create a new folder at the specified path.'
+)
 async def create_folder(
     vault_folder_path: str,
     full_folder_path: Annotated[str, Depends(validate_new_folder)]
@@ -51,7 +63,11 @@ async def create_folder(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error creating folder: {str(e)}")
 
-@folder_router.patch("/{vault_folder_path:path}", summary="Move/Rename a folder", dependencies=[Depends(obsidian_security)])
+@folder_router.patch(
+    "/{vault_folder_path:path}", 
+    summary="Move or rename a folder",
+    response_description='Move or rename the specified folder to the new specified path.'
+)
 async def move_folder(
     vault_folder_path: str,
     move_path: NewPathBody

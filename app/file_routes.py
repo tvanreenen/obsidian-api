@@ -10,18 +10,26 @@ from app.path_validation import (
 from app.utils import walk_vault
 from app.models import FileContentBody, NewPathBody
 
+obsidian_security = ObsidianHTTPBearer()
 file_router = APIRouter(
     prefix="/files",
-    tags=["files"]
+    tags=["files"],
+    dependencies=[Depends(obsidian_security)]
 )
 
-obsidian_security = ObsidianHTTPBearer()
-
-@file_router.get("/", summary="List markdown files", dependencies=[Depends(obsidian_security)])
+@file_router.get(
+    "/", 
+    summary="List files", 
+    description="List the file paths to all of the markdown files in your vault.", 
+)
 def list_files():
     return walk_vault(lambda root, dirs, files: [file for file in files if file.endswith(".md")])
 
-@file_router.get("/{vault_file_path:path}", summary="Read a specific file", dependencies=[Depends(obsidian_security)])
+@file_router.get(
+    "/{vault_file_path:path}", 
+    summary="Read a file",
+    response_description='Get the contents of the markdown file at the specified path.'
+)
 async def read_file(
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
 ):
@@ -34,7 +42,11 @@ async def read_file(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error reading file: {str(e)}")
 
-@file_router.post("/{vault_file_path:path}", summary="Create a new file", dependencies=[Depends(obsidian_security)])
+@file_router.post(
+    "/{vault_file_path:path}", 
+    summary="Create a new file",
+    response_description='Create a new markdown file at the specified path with the specified content.'
+)
 async def create_file(
     vault_file_path: str,
     file_content: FileContentBody,
@@ -51,7 +63,11 @@ async def create_file(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error creating file: {str(e)}")
 
-@file_router.patch("/{vault_file_path:path}", summary="Move/Rename a file", dependencies=[Depends(obsidian_security)])
+@file_router.patch(
+    "/{vault_file_path:path}",
+    summary="Move or rename a file",
+    response_description='Move or rename the specified markdown file to the new specified path.'
+)
 async def move_file(
     vault_file_path: str,
     move_path: NewPathBody,
@@ -67,7 +83,11 @@ async def move_file(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error moving file: {str(e)}")
 
-@file_router.put("/{vault_file_path:path}", summary="Update an existing file", dependencies=[Depends(obsidian_security)])
+@file_router.put(
+    "/{vault_file_path:path}", 
+    summary="Update an existing file",
+    response_description='Update the contents of the specified markdown file with the new specified content.'
+)
 async def update_file(
     vault_file_path: str,
     file_content: FileContentBody,
