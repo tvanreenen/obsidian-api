@@ -7,14 +7,14 @@ ensuring paths are valid, exist (or don't exist) as required, and are within the
 """
 
 import os
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from typing import Optional, Literal
 from app.utils import get_vault_path, is_hidden_directory
 
 def _get_full_path(vault_relative_path: str) -> str:
     full_path = os.path.join(get_vault_path(), vault_relative_path)
     if not os.path.abspath(full_path).startswith(os.path.abspath(get_vault_path())):
-        raise HTTPException(status_code=400, detail="Invalid path")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid path")
     return full_path
 
 def _validate_path(
@@ -26,21 +26,21 @@ def _validate_path(
     full_path = _get_full_path(vault_relative_path)
     
     if is_hidden_directory(full_path):
-        raise HTTPException(status_code=404, detail=f"{path_type.capitalize()} not found: {vault_relative_path}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{path_type.capitalize()} not found: {vault_relative_path}")
     
     if must_exist:
         if not os.path.exists(full_path):
-            raise HTTPException(status_code=404, detail=f"{path_type.capitalize()} not found: {vault_relative_path}")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{path_type.capitalize()} not found: {vault_relative_path}")
         if path_type == "file" and not os.path.isfile(full_path):
-            raise HTTPException(status_code=400, detail=f"Path is not a file: {vault_relative_path}")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Path is not a file: {vault_relative_path}")
         elif path_type == "folder" and not os.path.isdir(full_path):
-            raise HTTPException(status_code=400, detail=f"Path is not a folder: {vault_relative_path}")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Path is not a folder: {vault_relative_path}")
     else:
         if os.path.exists(full_path):
-            raise HTTPException(status_code=400, detail=f"{path_type.capitalize()} already exists: {vault_relative_path}")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"{path_type.capitalize()} already exists: {vault_relative_path}")
     
     if must_be_markdown and not full_path.endswith('.md'):
-        raise HTTPException(status_code=400, detail=f"File must have .md extension: {vault_relative_path}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"File must have .md extension: {vault_relative_path}")
     
     return full_path
 
@@ -63,5 +63,5 @@ def validate_destination_path(vault_destination_path: str, vault_source_path: Op
         if os.path.normpath(full_path) == os.path.normpath(source_full_path):
             return full_path
     if os.path.exists(full_path):
-        raise HTTPException(status_code=400, detail=f"Path already exists: {vault_destination_path}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Path already exists: {vault_destination_path}")
     return full_path 

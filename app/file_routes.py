@@ -1,5 +1,5 @@
 import os
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Annotated
 from app.models import FileContentBody, NewPathBody
 from app.path_validation import (
@@ -32,7 +32,7 @@ async def read_file(
     except HTTPException as e:
         raise e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error reading file: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error reading file: {str(e)}")
 
 @file_router.post("/{vault_file_path:path}", summary="Create a new file", dependencies=[Depends(obsidian_security)])
 async def create_file(
@@ -49,7 +49,7 @@ async def create_file(
     except HTTPException as e:
         raise e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error creating file: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error creating file: {str(e)}")
 
 @file_router.patch("/{vault_file_path:path}", summary="Move/Rename a file", dependencies=[Depends(obsidian_security)])
 async def move_file(
@@ -65,7 +65,7 @@ async def move_file(
     except HTTPException as e:
         raise e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error moving file: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error moving file: {str(e)}")
 
 @file_router.put("/{vault_file_path:path}", summary="Update an existing file", dependencies=[Depends(obsidian_security)])
 async def update_file(
@@ -80,4 +80,4 @@ async def update_file(
     except HTTPException as e:
         raise e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error updating file: {str(e)}") 
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error updating file: {str(e)}") 

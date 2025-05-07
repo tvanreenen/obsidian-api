@@ -1,5 +1,5 @@
 import os
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Annotated
 from app.models import NewPathBody
 from app.path_validation import (
@@ -36,7 +36,7 @@ async def list_folder_files(
     except HTTPException as e:
         raise e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error listing folder contents: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error listing folder contents: {str(e)}")
 
 @folder_router.post("/{vault_folder_path:path}", summary="Create a new folder", dependencies=[Depends(obsidian_security)])
 async def create_folder(
@@ -49,7 +49,7 @@ async def create_folder(
     except HTTPException as e:
         raise e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error creating folder: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error creating folder: {str(e)}")
 
 @folder_router.patch("/{vault_folder_path:path}", summary="Move/Rename a folder", dependencies=[Depends(obsidian_security)])
 async def move_folder(
@@ -68,4 +68,4 @@ async def move_folder(
     except HTTPException as e:
         raise e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error moving folder: {str(e)}") 
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error moving folder: {str(e)}") 
