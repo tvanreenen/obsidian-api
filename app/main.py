@@ -1,7 +1,8 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
+from fastmcp import FastMCP
 from app.file_routes import file_router
 from app.folder_routes import folder_router
-from fastapi.exceptions import RequestValidationError
 from app.path_validation import validation_exception_handler
 
 app = FastAPI(

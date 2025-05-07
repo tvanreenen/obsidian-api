@@ -1,14 +1,14 @@
 import os
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Annotated
-from app.models import FileContentBody, NewPathBody
+from app.authentication import ObsidianHTTPBearer
 from app.path_validation import (
     validate_existing_markdown_file,
     validate_new_markdown_file,
     validate_destination_path
 )
-from app.authentication import ObsidianHTTPBearer
 from app.utils import walk_vault
+from app.models import FileContentBody, NewPathBody
 
 file_router = APIRouter(
     prefix="/files",
