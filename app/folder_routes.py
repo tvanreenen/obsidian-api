@@ -5,11 +5,10 @@ from app.models import NewPathBody
 from app.validation import (
     validate_existing_folder,
     validate_new_folder,
-    validate_destination_path,
-    get_vault_path
+    validate_destination_path
 )
 from app.dependencies import ObsidianHTTPBearer
-from app.utils import walk_vault
+from app.utils import walk_vault, get_vault_path
 
 folder_router = APIRouter(
     prefix="/folders",

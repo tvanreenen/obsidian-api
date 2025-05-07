@@ -10,23 +10,7 @@ import os
 from fastapi import HTTPException
 from typing import Optional, Literal
 from pathlib import Path
-
-def get_vault_path() -> str:
-    path = os.getenv("OBSIDIAN_API_VAULT_PATH")
-    if not path:
-        raise HTTPException(status_code=400, detail="OBSIDIAN_API_VAULT_PATH environment variable must be set")
-    return path
-
-def is_hidden_directory(path: str) -> bool:
-    path_parts = Path(path).parts
-    current_path = Path(get_vault_path())
-    
-    for part in path_parts:
-        current_path = current_path / part
-        if part.startswith('.') and current_path.is_dir():
-            return True
-            
-    return False
+from app.utils import get_vault_path, is_hidden_directory
 
 def _get_full_path(vault_relative_path: str) -> str:
     full_path = os.path.join(get_vault_path(), vault_relative_path)
