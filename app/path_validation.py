@@ -7,7 +7,8 @@ ensuring paths are valid, exist (or don't exist) as required, and are within the
 """
 
 import os
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from typing import Optional, Literal
 from app.utils import get_vault_path, is_hidden_directory
 
@@ -64,4 +65,7 @@ def validate_destination_path(vault_destination_path: str, vault_source_path: Op
             return full_path
     if os.path.exists(full_path):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Path already exists: {vault_destination_path}")
-    return full_path 
+    return full_path
+
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail={"errors": exc.errors()}) 
