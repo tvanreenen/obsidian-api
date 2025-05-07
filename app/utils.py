@@ -19,7 +19,7 @@ def is_hidden_directory(path: str) -> bool:
             
     return False
 
-def walk_vault(filter_func):
+def walk_vault(filter_func) -> list[str]:
     vault_path = get_vault_path()
     
     if not os.path.exists(vault_path):

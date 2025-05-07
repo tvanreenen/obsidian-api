@@ -8,7 +8,7 @@ from app.path_validation import validation_exception_handler
 app = FastAPI(
     title="Obsidian API",
     version="0.2.0",
-    description="A FastAPI service for managing and searching an Obsidian vault."
+    description="A personal RESTful API for managing markdown files and folders in your Obsidian vault."
 )
 
 app.include_router(file_router)
