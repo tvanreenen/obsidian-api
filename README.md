@@ -55,7 +55,7 @@ By default, authentication is disabled and no API key is required. To enable aut
 OBSIDIAN_AUTH_ENABLED=true
 ```
 
-You can generate your API key using any secure method, such as `openssl rand -hex 32` or a password manager. Set the generated key using the following environment variable:
+You can generate your API key using any secure method, such as `python -c "import secrets; print(secrets.token_urlsafe(32))"`, `openssl rand -hex 32`, or a password manager. Set the generated key using the following environment variable:
 
 ```bash
 OBSIDIAN_API_KEY=your-secret-api-key
@@ -76,7 +76,7 @@ Notes:
 
 ### HTTPS Support
 
-> ⚠️ **Warning**: This API does not provide HTTPS natively. To secure your deployment, you must place it behind a secure reverse proxy (e.g., NGINX, Traefik, or Cloudflare Tunnel) that handles HTTPS. This is essential to prevent credentials and sensitive data from being transmitted in plaintext over the internet.
+> ⚠️ **Warning**: This API does not provide HTTPS natively. To secure your deployment and prevent credentials and sensitive data from being transmitted in plaintext over the internet, you must place it behind a secure reverse proxy (e.g., NGINX, Traefik, or Cloudflare Tunnel) that handles HTTPS.
 
 ## API Endpoints
 
