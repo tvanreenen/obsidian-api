@@ -61,7 +61,8 @@ async def create_file(
 @file_router.patch(
     "/{vault_file_path:path}",
     summary="Move or rename a file",
-    response_description='Move or rename the specified markdown file to the new specified path.'
+    response_description='Move or rename the specified markdown file to the new specified path.',
+    response_model=FileResponse
 )
 async def move_file(
     vault_file_path: str,
@@ -72,7 +73,7 @@ async def move_file(
         full_destination_path = validate_destination_path(move_path.new_path, vault_file_path)
         os.makedirs(os.path.dirname(full_destination_path), exist_ok=True)
         os.rename(full_file_path, full_destination_path)
-        return {"message": f"File moved successfully to {move_path.new_path}"}
+        return read_file_to_response(full_destination_path)
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -81,17 +82,17 @@ async def move_file(
 @file_router.put(
     "/{vault_file_path:path}", 
     summary="Update an existing file",
-    response_description='Update the contents of the specified markdown file with the new specified content.'
+    response_description='Update the contents of the specified markdown file with the new specified content.',
+    response_model=FileResponse
 )
 async def update_file(
-    vault_file_path: str,
     file_content: FileContentBody,
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
 ):
     try:
         with open(full_file_path, 'w', encoding='utf-8') as f:
             f.write(file_content.content)
-        return {"message": f"File updated successfully: {vault_file_path}"}
+        return read_file_to_response(full_file_path)
     except HTTPException as e:
         raise e
     except Exception as e:
