@@ -7,7 +7,7 @@ from app.path_validation import (
     validate_new_markdown_file,
     validate_destination_path
 )
-from app.utils import walk_vault, read_file_to_response
+from app.utils import walk_files, read_file_to_response
 from app.models import FileCreateRequest, FileUpdateRequest, FileMoveRequest, FileResponse
 
 obsidian_security = ObsidianHTTPBearer()
@@ -20,10 +20,18 @@ file_router = APIRouter(
 @file_router.get(
     "/", 
     summary="List files", 
-    description="List the file paths to all of the markdown files in your vault."
+    description="List all markdown files in your vault.",
+    response_model=list[FileResponse]
 )
 def list_files():
-    return walk_vault(lambda root, dirs, files: [file for file in files if file.endswith(".md")])
+    try:
+        return walk_files()
+    except FileNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vault path does not exist")
+    except PermissionError:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Vault path is not readable")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error accessing vault: {str(e)}")
 
 @file_router.get(
     "/{vault_file_path:path}", 
@@ -33,7 +41,7 @@ def list_files():
 )
 async def read_file(
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
-):
+) -> FileResponse:
     return read_file_to_response(full_file_path)
 
 @file_router.post(
@@ -44,14 +52,14 @@ async def read_file(
 )
 async def create_file(
     vault_file_path: str,
-    file_content: FileCreateRequest,
+    request_model: FileCreateRequest,
     full_file_path: Annotated[str, Depends(validate_new_markdown_file)]
-):
+) -> FileResponse:
     os.makedirs(os.path.dirname(full_file_path), exist_ok=True)
     
     try:
         with open(full_file_path, 'w', encoding='utf-8') as f:
-            f.write(file_content.content)
+            f.write(request_model.content)
         return read_file_to_response(full_file_path)
     except HTTPException as e:
         raise e
@@ -66,11 +74,11 @@ async def create_file(
 )
 async def move_file(
     vault_file_path: str,
-    move_path: FileMoveRequest,
+    request_model: FileMoveRequest,
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
-):
+) -> FileResponse:
     try:
-        full_destination_path = validate_destination_path(move_path.new_path, vault_file_path)
+        full_destination_path = validate_destination_path(request_model.new_path, vault_file_path)
         os.makedirs(os.path.dirname(full_destination_path), exist_ok=True)
         os.rename(full_file_path, full_destination_path)
         return read_file_to_response(full_destination_path)
@@ -86,12 +94,12 @@ async def move_file(
     response_model=FileResponse
 )
 async def update_file(
-    file_content: FileUpdateRequest,
+    request_model: FileUpdateRequest,
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
-):
+) -> FileResponse:
     try:
         with open(full_file_path, 'w', encoding='utf-8') as f:
-            f.write(file_content.content)
+            f.write(request_model.content)
         return read_file_to_response(full_file_path)
     except HTTPException as e:
         raise e

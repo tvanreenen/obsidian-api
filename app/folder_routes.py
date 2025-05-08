@@ -7,8 +7,8 @@ from app.path_validation import (
     validate_new_folder,
     validate_destination_path
 )
-from app.utils import walk_vault, read_folder_to_response
-from app.models import NewPathBody, FolderResponse
+from app.utils import walk_folders, read_folder_to_response
+from app.models import FolderMoveRequest, FolderResponse
 
 obsidian_security = ObsidianHTTPBearer()
 folder_router = APIRouter(
@@ -20,10 +20,18 @@ folder_router = APIRouter(
 @folder_router.get(
     "/", 
     summary="List all folders",
-    response_description='List all of the folders in your vault.'
+    response_description='List all of the folders in your vault.',
+    response_model=list[FolderResponse]
 )
-def list_folders():
-    return walk_vault(lambda root, dirs, files: dirs)
+def list_folders() -> list[FolderResponse]:
+    try:
+        return walk_folders()
+    except FileNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vault path does not exist")
+    except PermissionError:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Vault path is not readable")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error accessing vault: {str(e)}")
 
 @folder_router.get(
     "/{vault_folder_path:path}", 
@@ -33,7 +41,7 @@ def list_folders():
 )
 async def list_folder_files(
     full_folder_path: Annotated[str, Depends(validate_existing_folder)]
-):
+) -> FolderResponse:
     return read_folder_to_response(full_folder_path)
 
 @folder_router.post(
@@ -43,9 +51,8 @@ async def list_folder_files(
     response_model=FolderResponse
 )
 async def create_folder(
-    vault_folder_path: str,
     full_folder_path: Annotated[str, Depends(validate_new_folder)]
-):
+) -> FolderResponse:
     try:
         os.makedirs(full_folder_path)
         return read_folder_to_response(full_folder_path)
@@ -61,17 +68,15 @@ async def create_folder(
 )
 async def move_folder(
     vault_folder_path: str,
-    move_path: NewPathBody
-):
+    full_folder_path: Annotated[str, Depends(validate_existing_folder)],
+    request_model: FolderMoveRequest
+) -> FolderResponse:
     try:
-        full_path = validate_existing_folder(vault_folder_path)
-        full_destination_path = validate_destination_path(move_path.new_path, vault_folder_path)
-        
+        full_destination_path = validate_destination_path(request_model.new_path, vault_folder_path)  # can this in the parameter signature?
         parent_dir = os.path.dirname(full_destination_path)
         os.makedirs(parent_dir, exist_ok=True)
-        
-        os.rename(full_path, full_destination_path)
-        return {"message": f"Folder moved successfully to {move_path.new_path}"}
+        os.rename(full_folder_path, full_destination_path)
+        return read_folder_to_response(full_destination_path)
     except HTTPException as e:
         raise e
     except Exception as e:
