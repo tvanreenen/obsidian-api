@@ -1,14 +1,14 @@
 import os
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Annotated
+from typing import Annotated, List
 from app.authentication import ObsidianHTTPBearer
 from app.path_validation import (
     validate_existing_markdown_file,
     validate_new_markdown_file,
     validate_destination_path
 )
-from app.utils import walk_vault
-from app.models import FileContentBody, NewPathBody
+from app.utils import walk_vault, read_file_to_response
+from app.models import FileContentBody, NewPathBody, FileResponse
 
 obsidian_security = ObsidianHTTPBearer()
 file_router = APIRouter(
@@ -20,7 +20,7 @@ file_router = APIRouter(
 @file_router.get(
     "/", 
     summary="List files", 
-    description="List the file paths to all of the markdown files in your vault.", 
+    description="List the file paths to all of the markdown files in your vault."
 )
 def list_files():
     return walk_vault(lambda root, dirs, files: [file for file in files if file.endswith(".md")])
@@ -28,19 +28,13 @@ def list_files():
 @file_router.get(
     "/{vault_file_path:path}", 
     summary="Read a file",
-    response_description='Get the contents of the markdown file at the specified path.'
+    response_description='Get the contents of the markdown file at the specified path.',
+    response_model=FileResponse
 )
 async def read_file(
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
 ):
-    try:
-        with open(full_file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        return {"content": content}
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error reading file: {str(e)}")
+    return read_file_to_response(full_file_path)
 
 @file_router.post(
     "/{vault_file_path:path}", 

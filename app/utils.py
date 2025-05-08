@@ -1,6 +1,8 @@
 import os
 from fastapi import HTTPException, status
 from pathlib import Path
+from datetime import datetime
+from app.models import FileResponse, ResourceType, FolderResponse
 
 def get_vault_path() -> str:
     path = os.getenv("OBSIDIAN_API_VAULT_PATH")
@@ -40,4 +42,40 @@ def walk_vault(filter_func) -> list[str]:
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error accessing vault: {str(e)}")
     
-    return items 
+    return items
+
+def read_file_to_response(full_file_path: str) -> FileResponse:
+    with open(full_file_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    stats = os.stat(full_file_path)
+    
+    return FileResponse(
+        name=os.path.basename(full_file_path),
+        path=full_file_path,
+        type=ResourceType.FILE,
+        size=stats.st_size,
+        content=content,
+        created=datetime.fromtimestamp(stats.st_ctime),
+        modified=datetime.fromtimestamp(stats.st_mtime)
+    )
+
+def read_folder_to_response(full_folder_path: str) -> FolderResponse:
+    stats = os.stat(full_folder_path)
+    children = []
+    
+    for root, _, filenames in os.walk(full_folder_path):
+        for filename in filenames:
+            if filename.endswith('.md'):
+                full_file_path = os.path.join(root, filename)
+                children.append(read_file_to_response(full_file_path))
+    
+    return FolderResponse(
+        name=os.path.basename(full_folder_path),
+        path=os.path.relpath(full_folder_path, get_vault_path()),
+        type=ResourceType.FOLDER,
+        size=stats.st_size,
+        created=datetime.fromtimestamp(stats.st_ctime),
+        modified=datetime.fromtimestamp(stats.st_mtime),
+        children=children
+    )

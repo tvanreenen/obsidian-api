@@ -7,8 +7,8 @@ from app.path_validation import (
     validate_new_folder,
     validate_destination_path
 )
-from app.utils import walk_vault, get_vault_path
-from app.models import NewPathBody
+from app.utils import walk_vault, read_folder_to_response
+from app.models import NewPathBody, FolderResponse
 
 obsidian_security = ObsidianHTTPBearer()
 folder_router = APIRouter(
@@ -28,23 +28,13 @@ def list_folders():
 @folder_router.get(
     "/{vault_folder_path:path}", 
     summary="List files in a folder",
-    response_description='List all of the markdown files in the specified folder.'
+    response_description='List all of the markdown files in the specified folder.',
+    response_model=FolderResponse
 )
 async def list_folder_files(
     full_folder_path: Annotated[str, Depends(validate_existing_folder)]
 ):
-    try:
-        files = []
-        for root, _, filenames in os.walk(full_folder_path):
-            for filename in filenames:
-                if filename.endswith('.md'):
-                    vault_relative_path = os.path.relpath(os.path.join(root, filename), get_vault_path())
-                    files.append(vault_relative_path)
-        return files
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error listing folder contents: {str(e)}")
+    return read_folder_to_response(full_folder_path)
 
 @folder_router.post(
     "/{vault_folder_path:path}", 
