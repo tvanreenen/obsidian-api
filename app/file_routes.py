@@ -39,7 +39,8 @@ async def read_file(
 @file_router.post(
     "/{vault_file_path:path}", 
     summary="Create a new file",
-    response_description='Create a new markdown file at the specified path with the specified content.'
+    response_description='Create a new markdown file at the specified path with the specified content.',
+    response_model=FileResponse
 )
 async def create_file(
     vault_file_path: str,
@@ -51,7 +52,7 @@ async def create_file(
     try:
         with open(full_file_path, 'w', encoding='utf-8') as f:
             f.write(file_content.content)
-        return {"message": f"File created successfully: {vault_file_path}"}
+        return read_file_to_response(full_file_path)
     except HTTPException as e:
         raise e
     except Exception as e:

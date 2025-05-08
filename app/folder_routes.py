@@ -39,7 +39,8 @@ async def list_folder_files(
 @folder_router.post(
     "/{vault_folder_path:path}", 
     summary="Create a new folder",
-    response_description='Create a new folder at the specified path.'
+    response_description='Create a new folder at the specified path.',
+    response_model=FolderResponse
 )
 async def create_folder(
     vault_folder_path: str,
@@ -47,7 +48,7 @@ async def create_folder(
 ):
     try:
         os.makedirs(full_folder_path)
-        return {"message": f"Folder created successfully: {vault_folder_path}"}
+        return read_folder_to_response(full_folder_path)
     except HTTPException as e:
         raise e
     except Exception as e:
