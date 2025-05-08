@@ -15,6 +15,17 @@ class ResourceMetadata(BaseModel):
     created: Optional[datetime] = Field(None, description="The timestamp when the file or folder was created")
     modified: Optional[datetime] = Field(None, description="The timestamp when the file or folder was last modified")
 
+# request
+
+class FileCreateRequest(BaseModel):
+     content: str = Field(..., description="Content to write to the new file")
+
+class FileUpdateRequest(BaseModel):
+    content: str = Field(..., description="Content to replace the existing file with")
+
+class FileMoveRequest(BaseModel):
+    new_path: str = Field(..., description="New path to move or rename the file to")
+
 # response
     
 class FileResponse(ResourceMetadata):

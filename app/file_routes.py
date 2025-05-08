@@ -8,7 +8,7 @@ from app.path_validation import (
     validate_destination_path
 )
 from app.utils import walk_vault, read_file_to_response
-from app.models import FileContentBody, NewPathBody, FileResponse
+from app.models import FileCreateRequest, FileUpdateRequest, FileMoveRequest, FileResponse
 
 obsidian_security = ObsidianHTTPBearer()
 file_router = APIRouter(
@@ -44,7 +44,7 @@ async def read_file(
 )
 async def create_file(
     vault_file_path: str,
-    file_content: FileContentBody,
+    file_content: FileCreateRequest,
     full_file_path: Annotated[str, Depends(validate_new_markdown_file)]
 ):
     os.makedirs(os.path.dirname(full_file_path), exist_ok=True)
@@ -66,7 +66,7 @@ async def create_file(
 )
 async def move_file(
     vault_file_path: str,
-    move_path: NewPathBody,
+    move_path: FileMoveRequest,
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
 ):
     try:
@@ -86,7 +86,7 @@ async def move_file(
     response_model=FileResponse
 )
 async def update_file(
-    file_content: FileContentBody,
+    file_content: FileUpdateRequest,
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
 ):
     try:
