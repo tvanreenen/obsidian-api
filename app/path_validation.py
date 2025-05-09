@@ -10,7 +10,7 @@ import os
 from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from typing import Optional, Literal
-from app.utils import get_vault_path, is_hidden_directory
+from app.utils import get_vault_path, is_hidden
 
 def _get_full_path(vault_relative_path: str) -> str:
     full_path = os.path.join(get_vault_path(), vault_relative_path)
@@ -26,7 +26,7 @@ def _validate_path(
 ) -> str:
     full_path = _get_full_path(vault_relative_path)
     
-    if is_hidden_directory(full_path):
+    if is_hidden(full_path):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{path_type.capitalize()} not found: {vault_relative_path}")
     
     if must_exist:
