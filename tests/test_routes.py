@@ -2,6 +2,14 @@ import os
 from pathlib import Path
 import pytest
 from datetime import datetime
+import re
+
+# Add at the top of the file
+ISO_TIMESTAMP_PATTERN = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$'
+
+def is_iso_timestamp(timestamp):
+    """Check if a string is a valid ISO 8601 timestamp"""
+    return bool(re.match(ISO_TIMESTAMP_PATTERN, timestamp))
 
 def test_missing_api_key(client, monkeypatch):
     monkeypatch.setenv("OBSIDIAN_AUTH_ENABLED", "true")
@@ -85,7 +93,6 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
             "route": "/files",
             "body": None,
             "expected_status": 200,
-            "expected_content": None,
             "verify_response": lambda response: (
                 len(response.json()) == 3 and
                 any(f["path"] == "Notes/test1.md" for f in response.json()) and
@@ -98,7 +105,6 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
             "route": "/folders",
             "body": None,
             "expected_status": 200,
-            "expected_content": None,
             "verify_response": lambda response: (
                 len(response.json()) == 2 and
                 any(f["path"] == "Notes" for f in response.json()) and
@@ -110,82 +116,93 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
             "route": "/files/Notes/test1.md",
             "body": None,
             "expected_status": 200,
-            "expected_content": {
-                "type": "file",
-                "name": "test1.md",
-                "path": "Notes/test1.md",
-                "content": "# Test File 1",
-                "size": len("# Test File 1")
-            }
+            "verify_response": lambda response: (
+                response.json()["type"] == "file" and
+                response.json()["name"] == "test1.md" and
+                response.json()["path"] == "Notes/test1.md" and
+                response.json()["content"] == "# Test File 1" and
+                response.json()["size"] == len("# Test File 1") and
+                is_iso_timestamp(response.json().get("created", "")) and
+                is_iso_timestamp(response.json().get("modified", ""))
+            )
         },{
             "method": "GET",
             "route": "/folders/Notes",
             "body": None,
             "expected_status": 200,
-            "expected_content": {
-                "type": "folder",
-                "name": "Notes",
-                "path": "Notes",
-                "children": []
-            }
+            "verify_response": lambda response: (
+                response.json()["type"] == "folder" and
+                response.json()["name"] == "Notes" and
+                response.json()["path"] == "Notes" and
+                is_iso_timestamp(response.json().get("created", "")) and
+                is_iso_timestamp(response.json().get("modified", ""))
+            )
         },{
             "method": "POST",
             "route": "/files/Notes/new_file.md",
             "body": {"content": "# New File"},
             "expected_status": 200,
-            "expected_content": {
-                "type": "file",
-                "name": "new_file.md",
-                "path": "Notes/new_file.md",
-                "content": "# New File",
-                "size": len("# New File")
-            }
+            "verify_response": lambda response: (
+                response.json()["type"] == "file" and
+                response.json()["name"] == "new_file.md" and
+                response.json()["path"] == "Notes/new_file.md" and
+                response.json()["content"] == "# New File" and
+                response.json()["size"] == len("# New File") and
+                is_iso_timestamp(response.json().get("created", "")) and
+                is_iso_timestamp(response.json().get("modified", ""))
+            )
         },{
             "method": "POST",
             "route": "/folders/NewFolder",
             "body": None,
             "expected_status": 200,
-            "expected_content": {
-                "type": "folder",
-                "name": "NewFolder",
-                "path": "NewFolder",
-                "children": []
-            }
+            "verify_response": lambda response: (
+                response.json()["type"] == "folder" and
+                response.json()["name"] == "NewFolder" and
+                response.json()["path"] == "NewFolder" and
+                is_iso_timestamp(response.json().get("created", "")) and
+                is_iso_timestamp(response.json().get("modified", ""))
+            )
         },{
             "method": "PUT",
             "route": "/files/Notes/test1.md",
             "body": {"content": "# Updated Content"},
             "expected_status": 200,
-            "expected_content": {
-                "type": "file",
-                "name": "test1.md",
-                "path": "Notes/test1.md",
-                "content": "# Updated Content",
-                "size": len("# Updated Content")
-            }
+            "verify_response": lambda response: (
+                response.json()["type"] == "file" and
+                response.json()["name"] == "test1.md" and
+                response.json()["path"] == "Notes/test1.md" and
+                response.json()["content"] == "# Updated Content" and
+                response.json()["size"] == len("# Updated Content") and
+                is_iso_timestamp(response.json().get("created", "")) and
+                is_iso_timestamp(response.json().get("modified", ""))
+            )
         },{
             "method": "PATCH",
             "route": "/files/Notes/test1.md",
             "body": {"new_path": "Notes/moved.md"},
             "expected_status": 200,
-            "expected_content": {
-                "type": "file",
-                "name": "moved.md",
-                "path": "Notes/moved.md",
-                "content": "# Test File 1",
-                "size": len("# Test File 1")
-            }
+            "verify_response": lambda response: (
+                response.json()["type"] == "file" and
+                response.json()["name"] == "moved.md" and
+                response.json()["path"] == "Notes/moved.md" and
+                response.json()["content"] == "# Test File 1" and
+                response.json()["size"] == len("# Test File 1") and
+                is_iso_timestamp(response.json().get("created", "")) and
+                is_iso_timestamp(response.json().get("modified", ""))
+            )
         },{
             "method": "PATCH",
             "route": "/folders/Projects",
             "body": {"new_path": "Projects_moved"},
             "expected_status": 200,
-            "expected_content": {
-                "type": "folder",
-                "name": "Projects_moved",
-                "path": "Projects_moved",
-                "children": []
-            }
+            "verify_response": lambda response: (
+                response.json()["type"] == "folder" and
+                response.json()["name"] == "Projects_moved" and
+                response.json()["path"] == "Projects_moved" and
+                is_iso_timestamp(response.json().get("created", "")) and
+                is_iso_timestamp(response.json().get("modified", ""))
+            )
         }
     ],
     ids=lambda case: f"{case['method']} {case['route']}"
@@ -212,24 +229,13 @@ def test_successful_operations(client, test_case, auth_enabled, monkeypatch):
     
     assert response.status_code == test_case["expected_status"]
     
-    if test_case["expected_content"]:
-        response_json = response.json()
-        
-        # Verify timestamps exist and are valid
-        if 'created' in response_json:
-            assert isinstance(response_json['created'], str)
-            assert len(response_json['created']) > 0
-        if 'modified' in response_json:
-            assert isinstance(response_json['modified'], str)
-            assert len(response_json['modified']) > 0
-            
-        # Compare expected values (ignoring children)
-        for key, value in test_case["expected_content"].items():
-            if key != 'children':  # Skip children for now
-                assert response_json[key] == value
+    # Add debug logging for failing tests
+    if "folders" in test_case["route"]:
+        print(f"\nResponse for {test_case['route']}:")
+        print(f"Status: {response.status_code}")
+        print(f"Content: {response.json()}")
     
-    if "verify_response" in test_case:
-        assert test_case["verify_response"](response)
+    assert test_case["verify_response"](response)
 
 def test_route_exceptions(client):
     response = client.get("/nonexistent.md")
