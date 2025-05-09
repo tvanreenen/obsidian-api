@@ -40,9 +40,10 @@ def list_folders() -> list[FolderResponse]:
     response_model=FolderResponse
 )
 async def list_folder_files(
+    vault_folder_path: str,
     full_folder_path: Annotated[str, Depends(validate_existing_folder)]
 ) -> FolderResponse:
-    return read_folder_to_response(full_folder_path)
+    return read_folder_to_response(vault_folder_path)
 
 @folder_router.post(
     "/{vault_folder_path:path}", 
@@ -51,11 +52,12 @@ async def list_folder_files(
     response_model=FolderResponse
 )
 async def create_folder(
+    vault_folder_path: str,
     full_folder_path: Annotated[str, Depends(validate_new_folder)]
 ) -> FolderResponse:
     try:
         os.makedirs(full_folder_path)
-        return read_folder_to_response(full_folder_path)
+        return read_folder_to_response(vault_folder_path)
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -72,11 +74,11 @@ async def move_folder(
     request_model: FolderMoveRequest
 ) -> FolderResponse:
     try:
-        full_destination_path = validate_destination_path(request_model.new_path, vault_folder_path)  # can this in the parameter signature?
+        full_destination_path = validate_destination_path(request_model.new_path, vault_folder_path)
         parent_dir = os.path.dirname(full_destination_path)
         os.makedirs(parent_dir, exist_ok=True)
         os.rename(full_folder_path, full_destination_path)
-        return read_folder_to_response(full_destination_path)
+        return read_folder_to_response(request_model.new_path)
     except HTTPException as e:
         raise e
     except Exception as e:

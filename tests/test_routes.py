@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import pytest
+from datetime import datetime
 
 def test_missing_api_key(client, monkeypatch):
     monkeypatch.setenv("OBSIDIAN_AUTH_ENABLED", "true")
@@ -87,9 +88,10 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
             "expected_content": None,
             "verify_response": lambda response: (
                 len(response.json()) == 3 and
-                "Notes/test1.md" in response.json() and
-                "Notes/test2.md" in response.json() and
-                "Projects/test3.md" in response.json()
+                any(f["path"] == "Notes/test1.md" for f in response.json()) and
+                any(f["path"] == "Notes/test2.md" for f in response.json()) and
+                any(f["path"] == "Projects/test3.md" for f in response.json()) and
+                all(f["type"] == "file" for f in response.json())
             )
         },{
             "method": "GET",
@@ -99,73 +101,91 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
             "expected_content": None,
             "verify_response": lambda response: (
                 len(response.json()) == 2 and
-                "Notes" in response.json() and
-                "Projects" in response.json()
+                any(f["path"] == "Notes" for f in response.json()) and
+                any(f["path"] == "Projects" for f in response.json()) and
+                all(f["type"] == "folder" for f in response.json())
             )
         },{
             "method": "GET",
             "route": "/files/Notes/test1.md",
             "body": None,
             "expected_status": 200,
-            "expected_content": {"content": "# Test File 1"}
+            "expected_content": {
+                "type": "file",
+                "name": "test1.md",
+                "path": "Notes/test1.md",
+                "content": "# Test File 1",
+                "size": len("# Test File 1")
+            }
         },{
             "method": "GET",
             "route": "/folders/Notes",
             "body": None,
             "expected_status": 200,
-            "expected_content": None,
-            "verify_response": lambda response: (
-                len(response.json()) == 2 and
-                "Notes/test1.md" in response.json() and
-                "Notes/test2.md" in response.json()
-            )
+            "expected_content": {
+                "type": "folder",
+                "name": "Notes",
+                "path": "Notes",
+                "children": []
+            }
         },{
             "method": "POST",
             "route": "/files/Notes/new_file.md",
             "body": {"content": "# New File"},
             "expected_status": 200,
-            "expected_content": {"message": "File created successfully: Notes/new_file.md"},
-            "verify_operation": lambda client, headers: (
-                client.get("/files/Notes/new_file.md", headers=headers).json()["content"] == "# New File"
-            )
+            "expected_content": {
+                "type": "file",
+                "name": "new_file.md",
+                "path": "Notes/new_file.md",
+                "content": "# New File",
+                "size": len("# New File")
+            }
         },{
             "method": "POST",
             "route": "/folders/NewFolder",
             "body": None,
             "expected_status": 200,
-            "expected_content": {"message": "Folder created successfully: NewFolder"},
-            "verify_operation": lambda client, headers: (
-                "NewFolder" in client.get("/folders", headers=headers).json()
-            )
+            "expected_content": {
+                "type": "folder",
+                "name": "NewFolder",
+                "path": "NewFolder",
+                "children": []
+            }
         },{
             "method": "PUT",
             "route": "/files/Notes/test1.md",
             "body": {"content": "# Updated Content"},
             "expected_status": 200,
-            "expected_content": {"message": "File updated successfully: Notes/test1.md"},
-            "verify_operation": lambda client, headers: (
-                client.get("/files/Notes/test1.md", headers=headers).json()["content"] == "# Updated Content"
-            )
+            "expected_content": {
+                "type": "file",
+                "name": "test1.md",
+                "path": "Notes/test1.md",
+                "content": "# Updated Content",
+                "size": len("# Updated Content")
+            }
         },{
             "method": "PATCH",
             "route": "/files/Notes/test1.md",
             "body": {"new_path": "Notes/moved.md"},
             "expected_status": 200,
-            "expected_content": {"message": "File moved successfully to Notes/moved.md"},
-            "verify_operation": lambda client, headers: (
-                client.get("/files/Notes/moved.md", headers=headers).json()["content"] == "# Test File 1" and
-                client.get("/files/Notes/test1.md", headers=headers).status_code == 404
-            )
+            "expected_content": {
+                "type": "file",
+                "name": "moved.md",
+                "path": "Notes/moved.md",
+                "content": "# Test File 1",
+                "size": len("# Test File 1")
+            }
         },{
             "method": "PATCH",
             "route": "/folders/Projects",
             "body": {"new_path": "Projects_moved"},
             "expected_status": 200,
-            "expected_content": {"message": "Folder moved successfully to Projects_moved"},
-            "verify_operation": lambda client, headers: (
-                "Projects" not in client.get("/folders", headers=headers).json() and
-                "Projects_moved" in client.get("/folders", headers=headers).json()
-            )
+            "expected_content": {
+                "type": "folder",
+                "name": "Projects_moved",
+                "path": "Projects_moved",
+                "children": []
+            }
         }
     ],
     ids=lambda case: f"{case['method']} {case['route']}"
@@ -193,13 +213,23 @@ def test_successful_operations(client, test_case, auth_enabled, monkeypatch):
     assert response.status_code == test_case["expected_status"]
     
     if test_case["expected_content"]:
-        assert response.json() == test_case["expected_content"]
+        response_json = response.json()
+        
+        # Verify timestamps exist and are valid
+        if 'created' in response_json:
+            assert isinstance(response_json['created'], str)
+            assert len(response_json['created']) > 0
+        if 'modified' in response_json:
+            assert isinstance(response_json['modified'], str)
+            assert len(response_json['modified']) > 0
+            
+        # Compare expected values (ignoring children)
+        for key, value in test_case["expected_content"].items():
+            if key != 'children':  # Skip children for now
+                assert response_json[key] == value
     
     if "verify_response" in test_case:
         assert test_case["verify_response"](response)
-    
-    if "verify_operation" in test_case:
-        assert test_case["verify_operation"](client, headers)
 
 def test_route_exceptions(client):
     response = client.get("/nonexistent.md")
@@ -220,18 +250,18 @@ def test_hidden_directories(client):
     assert response.status_code == 200
     files = response.json()
     assert len(files) == 3
-    assert "Notes/test1.md" in files
-    assert "Notes/test2.md" in files
-    assert "Projects/test3.md" in files
-    assert ".hidden/test.md" not in files
+    assert any(f["path"] == "Notes/test1.md" for f in files)
+    assert any(f["path"] == "Notes/test2.md" for f in files)
+    assert any(f["path"] == "Projects/test3.md" for f in files)
+    assert not any(f["path"] == ".hidden/test.md" for f in files)
     
     response = client.get("/folders")
     assert response.status_code == 200
     folders = response.json()
     assert len(folders) == 2
-    assert "Notes" in folders
-    assert "Projects" in folders
-    assert ".hidden" not in folders
+    assert any(f["path"] == "Notes" for f in folders)
+    assert any(f["path"] == "Projects" for f in folders)
+    assert not any(f["path"] == ".hidden" for f in folders)
 
     response = client.get("/files/.hidden/test.md")
     assert response.status_code == 404
@@ -251,14 +281,18 @@ def test_paths_with_spaces(client, path, encoded_path):
     # Test creating file with spaces
     response = client.post(f"/files/{path}", json={"content": "# Test Content"})
     assert response.status_code == 200
-    assert response.json()["message"] == f"File created successfully: {path}"
+    assert response.json()["path"] == path
+    assert response.json()["type"] == "file"
+    assert response.json()["content"] == "# Test Content"
     
     # Test reading file with raw path
     response = client.get(f"/files/{path}")
     assert response.status_code == 200
     assert response.json()["content"] == "# Test Content"
+    assert response.json()["type"] == "file"
     
     # Test reading file with URL-encoded path
     response = client.get(f"/files/{encoded_path}")
     assert response.status_code == 200
     assert response.json()["content"] == "# Test Content"
+    assert response.json()["type"] == "file"

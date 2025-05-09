@@ -40,9 +40,10 @@ def list_files():
     response_model=FileResponse
 )
 async def read_file(
+    vault_file_path: str,
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
 ) -> FileResponse:
-    return read_file_to_response(full_file_path)
+    return read_file_to_response(vault_file_path)
 
 @file_router.post(
     "/{vault_file_path:path}", 
@@ -60,7 +61,7 @@ async def create_file(
     try:
         with open(full_file_path, 'w', encoding='utf-8') as f:
             f.write(request_model.content)
-        return read_file_to_response(full_file_path)
+        return read_file_to_response(vault_file_path)
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -81,7 +82,7 @@ async def move_file(
         full_destination_path = validate_destination_path(request_model.new_path, vault_file_path)
         os.makedirs(os.path.dirname(full_destination_path), exist_ok=True)
         os.rename(full_file_path, full_destination_path)
-        return read_file_to_response(full_destination_path)
+        return read_file_to_response(request_model.new_path)
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -94,13 +95,14 @@ async def move_file(
     response_model=FileResponse
 )
 async def update_file(
+    vault_file_path: str,
     request_model: FileUpdateRequest,
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
 ) -> FileResponse:
     try:
         with open(full_file_path, 'w', encoding='utf-8') as f:
             f.write(request_model.content)
-        return read_file_to_response(full_file_path)
+        return read_file_to_response(vault_file_path)
     except HTTPException as e:
         raise e
     except Exception as e:

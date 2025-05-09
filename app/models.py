@@ -26,6 +26,9 @@ class FileUpdateRequest(BaseModel):
 class FileMoveRequest(BaseModel):
     new_path: str = Field(..., description="New path to move or rename the file to")
 
+class FolderMoveRequest(BaseModel):
+    new_path: str = Field(..., description="New path to move or rename the folder to")
+
 # response
     
 class FileResponse(ResourceMetadata):
@@ -36,11 +39,3 @@ class FileResponse(ResourceMetadata):
 class FolderResponse(ResourceMetadata):
     type: Literal[ResourceType.FOLDER] = Field(..., description="The type of the entry: 'folder'")
     children: Optional[List[FileResponse]] = Field(None, description="List of child markdown files")
-
-# old models
-
-class FileContentBody(BaseModel):
-    content: str = Field(..., description="Content of the file to create or update")
-
-class NewPathBody(BaseModel):
-    new_path: str = Field(..., min_length=1, description="New path for the file or folder") 
