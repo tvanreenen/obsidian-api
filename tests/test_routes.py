@@ -29,8 +29,8 @@ def test_missing_api_key(client, monkeypatch):
         {"method": "POST", "route": "/files/Notes/new_file.md", "body": {"content": "# New File"}},
         {"method": "POST", "route": "/folders/NewFolder", "body": None},
         {"method": "PUT", "route": "/files/Notes/test1.md", "body": {"content": "# Updated Content"}},
-        {"method": "PATCH", "route": "/files/Notes/test1.md", "body": {"new_path": "Notes/moved.md"}},
-        {"method": "PATCH", "route": "/folders/Projects", "body": {"new_path": "Projects_moved"}},
+        {"method": "PATCH", "route": "/files/Notes/test1.md", "body": {"path": "Notes/moved.md"}},
+        {"method": "PATCH", "route": "/folders/Projects", "body": {"path": "Projects_moved"}},
     ],
     ids=lambda route: f"{route['method']} {route['route']}"
 )
@@ -180,7 +180,7 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
         },{
             "method": "PATCH",
             "route": "/files/Notes/test1.md",
-            "body": {"new_path": "Notes/moved.md"},
+            "body": {"path": "Notes/moved.md"},
             "expected_status": 200,
             "verify_response": lambda response: (
                 response.json()["type"] == "file" and
@@ -193,8 +193,50 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
             )
         },{
             "method": "PATCH",
+            "route": "/files/Notes/test1.md",
+            "body": {"content": "# Updated via PATCH"},
+            "expected_status": 200,
+            "verify_response": lambda response: (
+                response.json()["type"] == "file" and
+                response.json()["name"] == "test1.md" and
+                response.json()["path"] == "Notes/test1.md" and
+                response.json()["content"] == "# Updated via PATCH" and
+                response.json()["size"] == len("# Updated via PATCH") and
+                is_iso_timestamp(response.json().get("created", "")) and
+                is_iso_timestamp(response.json().get("modified", ""))
+            )
+        },{
+            "method": "PATCH",
+            "route": "/files/Notes/test1.md",
+            "body": {"path": "Notes/moved.md", "content": "# Updated content and path"},
+            "expected_status": 200,
+            "verify_response": lambda response: (
+                response.json()["type"] == "file" and
+                response.json()["name"] == "moved.md" and
+                response.json()["path"] == "Notes/moved.md" and
+                response.json()["content"] == "# Updated content and path" and
+                response.json()["size"] == len("# Updated content and path") and
+                is_iso_timestamp(response.json().get("created", "")) and
+                is_iso_timestamp(response.json().get("modified", ""))
+            )
+        },{
+            "method": "PATCH",
+            "route": "/files/Notes/test1.md",
+            "body": {},
+            "expected_status": 200,
+            "verify_response": lambda response: (
+                response.json()["type"] == "file" and
+                response.json()["name"] == "test1.md" and
+                response.json()["path"] == "Notes/test1.md" and
+                response.json()["content"] == "# Test File 1" and
+                response.json()["size"] == len("# Test File 1") and
+                is_iso_timestamp(response.json().get("created", "")) and
+                is_iso_timestamp(response.json().get("modified", ""))
+            )
+        },{
+            "method": "PATCH",
             "route": "/folders/Projects",
-            "body": {"new_path": "Projects_moved"},
+            "body": {"path": "Projects_moved"},
             "expected_status": 200,
             "verify_response": lambda response: (
                 response.json()["type"] == "folder" and
@@ -244,7 +286,7 @@ def test_route_exceptions(client):
     response = client.post("/files/Notes/test1.md", content="", headers={"Content-Type": "text/plain"})
     assert response.status_code == 400
     
-    response = client.patch("/files/Notes/test2.md", json={"new_path": "Notes/test1.md"})
+    response = client.patch("/files/Notes/test2.md", json={"path": "Notes/test1.md"})
     assert response.status_code == 400
 
 def test_hidden_directories(client):

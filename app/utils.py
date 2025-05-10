@@ -31,7 +31,7 @@ def walk_files() -> list[FileResponse]:
             if file.endswith('.md'):
                 full_file_path = os.path.join(root, file)
                 if not is_hidden(full_file_path):
-                    items.append(read_file_to_response(full_file_path, "absolute"))
+                    items.append(read_file_to_response(full_file_path))
     
     return items
 
@@ -43,16 +43,12 @@ def walk_folders() -> list[FolderResponse]:
         for dir_name in dirs:
             full_dir_path = os.path.join(root, dir_name)
             if not is_hidden(full_dir_path):
-                items.append(read_folder_to_response(full_dir_path, "absolute", include_children=False))
+                items.append(read_folder_to_response(full_dir_path, include_children=False))
     
     return items
 
-def read_file_to_response(path: str, path_type: Literal["absolute", "relative"] = "relative") -> FileResponse:
-    if path_type == "relative":
-        full_file_path = os.path.join(get_vault_path(), path)
-    else:
-        full_file_path = path
-        path = os.path.relpath(path, get_vault_path())
+def read_file_to_response(full_file_path: str) -> FileResponse:
+    path = os.path.relpath(full_file_path, get_vault_path())
         
     with open(full_file_path, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -69,12 +65,8 @@ def read_file_to_response(path: str, path_type: Literal["absolute", "relative"] 
         modified=datetime.fromtimestamp(stats.st_mtime)
     )
 
-def read_folder_to_response(path: str, path_type: Literal["absolute", "relative"] = "relative", include_children: bool = True) -> FolderResponse:
-    if path_type == "relative":
-        full_folder_path = os.path.join(get_vault_path(), path)
-    else:
-        full_folder_path = path
-        path = os.path.relpath(path, get_vault_path())
+def read_folder_to_response(full_folder_path: str, include_children: bool = True) -> FolderResponse:
+    path = os.path.relpath(full_folder_path, get_vault_path())
         
     stats = os.stat(full_folder_path)
     children = []
@@ -84,7 +76,7 @@ def read_folder_to_response(path: str, path_type: Literal["absolute", "relative"
             for filename in sorted(filenames):
                 if filename.endswith('.md'):
                     full_file_path = os.path.join(root, filename)
-                    children.append(read_file_to_response(full_file_path, "absolute"))
+                    children.append(read_file_to_response(full_file_path))
         children.sort(key=lambda x: x.path)
     
     return FolderResponse(
