@@ -121,6 +121,7 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
                 response.json()["name"] == "test1.md" and
                 response.json()["path"] == "Notes/test1.md" and
                 response.json()["content"] == "# Test File 1" and
+                response.json()["frontmatter"] is None and
                 response.json()["size"] == len("# Test File 1") and
                 is_iso_timestamp(response.json().get("created", "")) and
                 is_iso_timestamp(response.json().get("modified", ""))
@@ -140,14 +141,15 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
         },{
             "method": "POST",
             "route": "/files/Notes/new_file.md",
-            "body": {"content": "# New File"},
+            "body": {"content": "---\ntitle: New Note\ntags: [note, test]\n---\n# New File"},
             "expected_status": 200,
             "verify_response": lambda response: (
                 response.json()["type"] == "file" and
                 response.json()["name"] == "new_file.md" and
                 response.json()["path"] == "Notes/new_file.md" and
                 response.json()["content"] == "# New File" and
-                response.json()["size"] == len("# New File") and
+                response.json()["frontmatter"] == {"title": "New Note", "tags": ["note", "test"]} and
+                response.json()["size"] == len("---\ntitle: New Note\ntags: [note, test]\n---\n# New File") and
                 is_iso_timestamp(response.json().get("created", "")) and
                 is_iso_timestamp(response.json().get("modified", ""))
             )
@@ -166,14 +168,15 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
         },{
             "method": "PUT",
             "route": "/files/Notes/test1.md",
-            "body": {"content": "# Updated Content"},
+            "body": {"content": "---\ntitle: Updated Note\ntags: [updated]\n---\n# Updated Content"},
             "expected_status": 200,
             "verify_response": lambda response: (
                 response.json()["type"] == "file" and
                 response.json()["name"] == "test1.md" and
                 response.json()["path"] == "Notes/test1.md" and
                 response.json()["content"] == "# Updated Content" and
-                response.json()["size"] == len("# Updated Content") and
+                response.json()["frontmatter"] == {"title": "Updated Note", "tags": ["updated"]} and
+                response.json()["size"] == len("---\ntitle: Updated Note\ntags: [updated]\n---\n# Updated Content") and
                 is_iso_timestamp(response.json().get("created", "")) and
                 is_iso_timestamp(response.json().get("modified", ""))
             )
@@ -194,14 +197,15 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
         },{
             "method": "PATCH",
             "route": "/files/Notes/test1.md",
-            "body": {"content": "# Updated via PATCH"},
+            "body": {"content": "---\ntitle: Patched Note\ntags: [patched]\n---\n# Updated via PATCH"},
             "expected_status": 200,
             "verify_response": lambda response: (
                 response.json()["type"] == "file" and
                 response.json()["name"] == "test1.md" and
                 response.json()["path"] == "Notes/test1.md" and
                 response.json()["content"] == "# Updated via PATCH" and
-                response.json()["size"] == len("# Updated via PATCH") and
+                response.json()["frontmatter"] == {"title": "Patched Note", "tags": ["patched"]} and
+                response.json()["size"] == len("---\ntitle: Patched Note\ntags: [patched]\n---\n# Updated via PATCH") and
                 is_iso_timestamp(response.json().get("created", "")) and
                 is_iso_timestamp(response.json().get("modified", ""))
             )
