@@ -4,6 +4,7 @@ from pathlib import Path
 from datetime import datetime
 from app.models import FileResponse, ResourceType, FolderResponse
 from typing import Literal
+import frontmatter
 
 def get_vault_path() -> str:
     path = os.getenv("OBSIDIAN_API_VAULT_PATH")
@@ -51,7 +52,9 @@ def read_file_to_response(full_file_path: str) -> FileResponse:
     path = os.path.relpath(full_file_path, get_vault_path())
         
     with open(full_file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
+        note = frontmatter.load(f)
+        content = note.content
+        frontmatter_data = note.metadata if note.metadata else None
     
     stats = os.stat(full_file_path)
     
@@ -61,6 +64,7 @@ def read_file_to_response(full_file_path: str) -> FileResponse:
         type=ResourceType.FILE,
         size=stats.st_size,
         content=content,
+        frontmatter=frontmatter_data,
         created=datetime.fromtimestamp(stats.st_ctime),
         modified=datetime.fromtimestamp(stats.st_mtime)
     )

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Dict, Any
 from enum import StrEnum
 from datetime import datetime
 
@@ -36,6 +36,7 @@ class FileResponse(ResourceMetadata):
     type: Literal[ResourceType.FILE] = Field(..., description="The type of the entry: 'file'")
     size: int = Field(..., description="Size of the file in bytes")
     content: Optional[str] = Field(None, description="The full content of the file")
+    frontmatter: Optional[Dict[str, Any]] = Field(None, description="The YAML frontmatter of the file")
 
 class FolderResponse(ResourceMetadata):
     type: Literal[ResourceType.FOLDER] = Field(..., description="The type of the entry: 'folder'")
