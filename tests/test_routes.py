@@ -28,8 +28,6 @@ def test_missing_api_key(client, monkeypatch):
         {"method": "GET", "route": "/folders/Notes", "body": None},
         {"method": "POST", "route": "/files/Notes/new_file.md", "body": {"content": "# New File"}},
         {"method": "POST", "route": "/folders/NewFolder", "body": None},
-        {"method": "PUT", "route": "/files/Notes/test1.md", "body": {"content": "# Updated Content"}},
-        {"method": "PATCH", "route": "/files/Notes/test1.md", "body": {"path": "Notes/moved.md"}},
         {"method": "PATCH", "route": "/folders/Projects", "body": {"path": "Projects_moved"}},
     ],
     ids=lambda route: f"{route['method']} {route['route']}"
@@ -163,78 +161,6 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
                 response.json()["type"] == "folder" and
                 response.json()["name"] == "NewFolder" and
                 response.json()["path"] == "NewFolder" and
-                is_iso_timestamp(response.json().get("created", "")) and
-                is_iso_timestamp(response.json().get("modified", ""))
-            )
-        },{
-            "method": "PUT",
-            "route": "/files/Notes/test1.md",
-            "body": {"content": "---\ntitle: Updated Note\ntags: [updated]\n---\n# Updated Content"},
-            "expected_status": 200,
-            "verify_response": lambda response: (
-                response.json()["type"] == "file" and
-                response.json()["name"] == "test1.md" and
-                response.json()["path"] == "Notes/test1.md" and
-                response.json()["body"] == "# Updated Content" and
-                response.json()["frontmatter"] == {"title": "Updated Note", "tags": ["updated"]} and
-                response.json()["size"] == len("---\ntitle: Updated Note\ntags: [updated]\n---\n# Updated Content") and
-                is_iso_timestamp(response.json().get("created", "")) and
-                is_iso_timestamp(response.json().get("modified", ""))
-            )
-        },{
-            "method": "PATCH",
-            "route": "/files/Notes/test1.md",
-            "body": {"path": "Notes/moved.md"},
-            "expected_status": 200,
-            "verify_response": lambda response: (
-                response.json()["type"] == "file" and
-                response.json()["name"] == "moved.md" and
-                response.json()["path"] == "Notes/moved.md" and
-                response.json()["body"] == "# Test File 1" and
-                response.json()["size"] == len("# Test File 1") and
-                is_iso_timestamp(response.json().get("created", "")) and
-                is_iso_timestamp(response.json().get("modified", ""))
-            )
-        },{
-            "method": "PATCH",
-            "route": "/files/Notes/test1.md",
-            "body": {"content": "---\ntitle: Patched Note\ntags: [patched]\n---\n# Updated via PATCH"},
-            "expected_status": 200,
-            "verify_response": lambda response: (
-                response.json()["type"] == "file" and
-                response.json()["name"] == "test1.md" and
-                response.json()["path"] == "Notes/test1.md" and
-                response.json()["body"] == "# Updated via PATCH" and
-                response.json()["frontmatter"] == {"title": "Patched Note", "tags": ["patched"]} and
-                response.json()["size"] == len("---\ntitle: Patched Note\ntags: [patched]\n---\n# Updated via PATCH") and
-                is_iso_timestamp(response.json().get("created", "")) and
-                is_iso_timestamp(response.json().get("modified", ""))
-            )
-        },{
-            "method": "PATCH",
-            "route": "/files/Notes/test1.md",
-            "body": {"path": "Notes/moved.md", "content": "# Updated content and path"},
-            "expected_status": 200,
-            "verify_response": lambda response: (
-                response.json()["type"] == "file" and
-                response.json()["name"] == "moved.md" and
-                response.json()["path"] == "Notes/moved.md" and
-                response.json()["body"] == "# Updated content and path" and
-                response.json()["size"] == len("# Updated content and path") and
-                is_iso_timestamp(response.json().get("created", "")) and
-                is_iso_timestamp(response.json().get("modified", ""))
-            )
-        },{
-            "method": "PATCH",
-            "route": "/files/Notes/test1.md",
-            "body": {},
-            "expected_status": 200,
-            "verify_response": lambda response: (
-                response.json()["type"] == "file" and
-                response.json()["name"] == "test1.md" and
-                response.json()["path"] == "Notes/test1.md" and
-                response.json()["body"] == "# Test File 1" and
-                response.json()["size"] == len("# Test File 1") and
                 is_iso_timestamp(response.json().get("created", "")) and
                 is_iso_timestamp(response.json().get("modified", ""))
             )
@@ -382,10 +308,10 @@ def test_route_exceptions(client):
     assert response.status_code == 404
     
     response = client.post("/files/Notes/test1.md", content="", headers={"Content-Type": "text/plain"})
-    assert response.status_code == 400
+    assert response.status_code == 409
     
-    response = client.patch("/files/Notes/test2.md", json={"path": "Notes/test1.md"})
-    assert response.status_code == 400
+    response = client.post("/files/Notes/test1.md", json={"content": "# Test Content"})
+    assert response.status_code == 409
 
 def test_hidden_directories(client):
     dot_dir = Path(os.getenv("OBSIDIAN_API_VAULT_PATH")) / ".hidden"

@@ -30,7 +30,7 @@ def _validate_path(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Path is not a folder: {vault_relative_path}")
     else:
         if os.path.exists(full_path):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"{path_type.capitalize()} already exists: {vault_relative_path}")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"{path_type.capitalize()} already exists: {vault_relative_path}")
     
     if must_be_markdown and not full_path.endswith('.md'):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"File must have .md extension: {vault_relative_path}")
@@ -56,7 +56,7 @@ def validate_destination_path(vault_destination_path: str, vault_source_path: Op
         if os.path.normpath(full_path) == os.path.normpath(source_full_path):
             return full_path
     if os.path.exists(full_path): # need to also test source path
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Path already exists: {vault_destination_path}")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Path already exists: {vault_destination_path}")
     return full_path
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):

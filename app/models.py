@@ -20,13 +20,6 @@ class ResourceMetadata(BaseModel):
 class FileCreateRequest(BaseModel):
      content: str = Field(..., description="Content to write to the new file")
 
-class FilePutRequest(BaseModel):
-    content: str = Field(..., description="Content to replace the existing file with")
-
-class FilePatchRequest(BaseModel):
-    path: Optional[str] = Field(None, description="New path to move or rename the file to")
-    content: Optional[str] = Field(None, description="New content to update the file with")
-
 class MetadataPatchRequest(BaseModel):
     path: Optional[str] = Field(None, description="New path to move or rename the file to")
 

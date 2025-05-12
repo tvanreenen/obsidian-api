@@ -17,17 +17,15 @@ from app.utils import (
 )
 from app.models import (
     FileCreateRequest, 
-    FilePutRequest, 
-    FilePatchRequest,
+    ParsedFileResponse,
+    BaseFileResponse,
+    FrontmatterResponse,
+    BodyResponse,
     MetadataPatchRequest,
     FrontmatterPutRequest,
     FrontmatterPatchRequest,
     BodyPutRequest,
-    RawPutRequest,
-    ParsedFileResponse,
-    BaseFileResponse,
-    FrontmatterResponse,
-    BodyResponse
+    RawPutRequest
 )
 
 obsidian_security = ObsidianHTTPBearer()
@@ -120,49 +118,6 @@ async def create_file(
     os.makedirs(os.path.dirname(full_file_path), exist_ok=True)
     with open(full_file_path, 'w', encoding='utf-8') as f:
         f.write(request_model.content)
-    return get_file_response(full_file_path)
-
-@file_router.patch(
-    "/{vault_file_path:path}",
-    summary="Update File (Merge)",
-    response_description='Update the file content and/or move/rename the file to a new path.',
-    response_model=ParsedFileResponse
-)
-async def patch_file(
-    vault_file_path: str,
-    full_file_path: Annotated[str, Depends(validate_existing_markdown_file)],
-    request_model: FilePatchRequest = None
-) -> ParsedFileResponse:
-    if not request_model or not request_model.model_dump(exclude_unset=True):
-        return get_file_response(full_file_path)
-        
-    if request_model.path is not None:
-        full_destination_path = validate_destination_path(request_model.path, vault_file_path)
-        os.makedirs(os.path.dirname(full_destination_path), exist_ok=True)
-        os.rename(full_file_path, full_destination_path)
-        full_file_path = full_destination_path
-        vault_file_path = request_model.path
-
-    if request_model.content is not None:
-        with open(full_file_path, 'w', encoding='utf-8') as f:
-            f.write(request_model.content)
-    
-    return get_file_response(full_file_path)
-
-@file_router.put(
-    "/{vault_file_path:path}", 
-    summary="Update File (Replace)",
-    response_description='Update the contents of the specified markdown file with the new specified content.',
-    response_model=ParsedFileResponse
-)
-async def put_file(
-    vault_file_path: str,
-    request_model: FilePutRequest,
-    full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
-) -> ParsedFileResponse:
-    with open(full_file_path, 'w', encoding='utf-8') as f:
-        f.write(request_model.content)
-        
     return get_file_response(full_file_path)
 
 @file_router.patch(
