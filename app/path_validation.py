@@ -1,11 +1,3 @@
-"""
-Path validation dependencies for FastAPI endpoints.
-
-These validators are designed to be injected into FastAPI endpoints using Depends().
-They handle validation of vault-relative paths and convert them to full system paths,
-ensuring paths are valid, exist (or don't exist) as required, and are within the vault.
-"""
-
 import os
 from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -63,7 +55,7 @@ def validate_destination_path(vault_destination_path: str, vault_source_path: Op
         source_full_path = _get_full_path(vault_source_path)
         if os.path.normpath(full_path) == os.path.normpath(source_full_path):
             return full_path
-    if os.path.exists(full_path):
+    if os.path.exists(full_path): # need to also test source path
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Path already exists: {vault_destination_path}")
     return full_path
 

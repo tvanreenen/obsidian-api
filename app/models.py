@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Literal, Dict, Any
+from typing import Optional, Literal, Dict, Any
 from enum import StrEnum
 from datetime import datetime
 
@@ -27,17 +27,40 @@ class FilePatchRequest(BaseModel):
     path: Optional[str] = Field(None, description="New path to move or rename the file to")
     content: Optional[str] = Field(None, description="New content to update the file with")
 
+class MetadataPatchRequest(BaseModel):
+    path: Optional[str] = Field(None, description="New path to move or rename the file to")
+
+class FrontmatterPutRequest(BaseModel):
+    frontmatter: Dict[str, Any] = Field(..., description="Complete frontmatter to replace existing frontmatter")
+
+class FrontmatterPatchRequest(BaseModel):
+    frontmatter: Dict[str, Any] = Field(..., description="Frontmatter updates to merge with existing frontmatter")
+
+class BodyPutRequest(BaseModel):
+    body: str = Field(..., description="Complete body content to replace existing body")
+
+class RawPutRequest(BaseModel):
+    content: str = Field(..., description="Complete raw content to replace existing content")
+
 class FolderPatchRequest(BaseModel):
     path: Optional[str] = Field(None, description="New path to move or rename the folder to")
 
 # response
     
-class FileResponse(ResourceMetadata):
+class BaseFileResponse(ResourceMetadata):
     type: Literal[ResourceType.FILE] = Field(..., description="The type of the entry: 'file'")
     size: int = Field(..., description="Size of the file in bytes")
-    content: Optional[str] = Field(None, description="The full content of the file")
+    created: datetime = Field(..., description="When the file was created")
+    modified: datetime = Field(..., description="When the file was last modified")
+
+class FrontmatterResponse(BaseModel):
     frontmatter: Optional[Dict[str, Any]] = Field(None, description="The YAML frontmatter of the file")
+
+class BodyResponse(BaseModel):
+    body: str = Field(..., description="The body content of the file without frontmatter")
+
+class ParsedFileResponse(BaseFileResponse, FrontmatterResponse, BodyResponse):
+    pass
 
 class FolderResponse(ResourceMetadata):
     type: Literal[ResourceType.FOLDER] = Field(..., description="The type of the entry: 'folder'")
-    children: Optional[List[FileResponse]] = Field(None, description="List of child markdown files")

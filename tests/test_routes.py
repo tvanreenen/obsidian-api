@@ -94,10 +94,11 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
             "body": None,
             "expected_status": 200,
             "verify_response": lambda response: (
-                len(response.json()) == 3 and
+                len(response.json()) == 4 and
                 any(f["path"] == "Notes/test1.md" for f in response.json()) and
                 any(f["path"] == "Notes/test2.md" for f in response.json()) and
                 any(f["path"] == "Projects/test3.md" for f in response.json()) and
+                any(f["path"] == "Notes/file_with_frontmatter.md" for f in response.json()) and
                 all(f["type"] == "file" for f in response.json())
             )
         },{
@@ -120,7 +121,7 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
                 response.json()["type"] == "file" and
                 response.json()["name"] == "test1.md" and
                 response.json()["path"] == "Notes/test1.md" and
-                response.json()["content"] == "# Test File 1" and
+                response.json()["body"] == "# Test File 1" and
                 response.json()["frontmatter"] is None and
                 response.json()["size"] == len("# Test File 1") and
                 is_iso_timestamp(response.json().get("created", "")) and
@@ -147,7 +148,7 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
                 response.json()["type"] == "file" and
                 response.json()["name"] == "new_file.md" and
                 response.json()["path"] == "Notes/new_file.md" and
-                response.json()["content"] == "# New File" and
+                response.json()["body"] == "# New File" and
                 response.json()["frontmatter"] == {"title": "New Note", "tags": ["note", "test"]} and
                 response.json()["size"] == len("---\ntitle: New Note\ntags: [note, test]\n---\n# New File") and
                 is_iso_timestamp(response.json().get("created", "")) and
@@ -174,7 +175,7 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
                 response.json()["type"] == "file" and
                 response.json()["name"] == "test1.md" and
                 response.json()["path"] == "Notes/test1.md" and
-                response.json()["content"] == "# Updated Content" and
+                response.json()["body"] == "# Updated Content" and
                 response.json()["frontmatter"] == {"title": "Updated Note", "tags": ["updated"]} and
                 response.json()["size"] == len("---\ntitle: Updated Note\ntags: [updated]\n---\n# Updated Content") and
                 is_iso_timestamp(response.json().get("created", "")) and
@@ -189,7 +190,7 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
                 response.json()["type"] == "file" and
                 response.json()["name"] == "moved.md" and
                 response.json()["path"] == "Notes/moved.md" and
-                response.json()["content"] == "# Test File 1" and
+                response.json()["body"] == "# Test File 1" and
                 response.json()["size"] == len("# Test File 1") and
                 is_iso_timestamp(response.json().get("created", "")) and
                 is_iso_timestamp(response.json().get("modified", ""))
@@ -203,7 +204,7 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
                 response.json()["type"] == "file" and
                 response.json()["name"] == "test1.md" and
                 response.json()["path"] == "Notes/test1.md" and
-                response.json()["content"] == "# Updated via PATCH" and
+                response.json()["body"] == "# Updated via PATCH" and
                 response.json()["frontmatter"] == {"title": "Patched Note", "tags": ["patched"]} and
                 response.json()["size"] == len("---\ntitle: Patched Note\ntags: [patched]\n---\n# Updated via PATCH") and
                 is_iso_timestamp(response.json().get("created", "")) and
@@ -218,7 +219,7 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
                 response.json()["type"] == "file" and
                 response.json()["name"] == "moved.md" and
                 response.json()["path"] == "Notes/moved.md" and
-                response.json()["content"] == "# Updated content and path" and
+                response.json()["body"] == "# Updated content and path" and
                 response.json()["size"] == len("# Updated content and path") and
                 is_iso_timestamp(response.json().get("created", "")) and
                 is_iso_timestamp(response.json().get("modified", ""))
@@ -232,7 +233,7 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
                 response.json()["type"] == "file" and
                 response.json()["name"] == "test1.md" and
                 response.json()["path"] == "Notes/test1.md" and
-                response.json()["content"] == "# Test File 1" and
+                response.json()["body"] == "# Test File 1" and
                 response.json()["size"] == len("# Test File 1") and
                 is_iso_timestamp(response.json().get("created", "")) and
                 is_iso_timestamp(response.json().get("modified", ""))
@@ -248,6 +249,99 @@ def test_auth_exceptions(client, monkeypatch, authScenario, route):
                 response.json()["path"] == "Projects_moved" and
                 is_iso_timestamp(response.json().get("created", "")) and
                 is_iso_timestamp(response.json().get("modified", ""))
+            )
+        },{
+            "method": "GET",
+            "route": "/files/Notes/test1.md/raw",
+            "body": None,
+            "expected_status": 200,
+            "verify_response": lambda response: (
+                response.text == "# Test File 1"
+            )
+        },{
+            "method": "GET",
+            "route": "/files/Notes/test1.md/metadata",
+            "body": None,
+            "expected_status": 200,
+            "verify_response": lambda response: (
+                response.json()["type"] == "file" and
+                response.json()["name"] == "test1.md" and
+                response.json()["path"] == "Notes/test1.md" and
+                "body" not in response.json() and
+                "frontmatter" not in response.json() and
+                response.json()["size"] == len("# Test File 1") and
+                is_iso_timestamp(response.json().get("created", "")) and
+                is_iso_timestamp(response.json().get("modified", ""))
+            )
+        },{
+            "method": "GET",
+            "route": "/files/Notes/test1.md/frontmatter",
+            "body": None,
+            "expected_status": 200,
+            "verify_response": lambda response: (
+                response.json()["frontmatter"] is None
+            )
+        },{
+            "method": "GET",
+            "route": "/files/Notes/test1.md/body",
+            "body": None,
+            "expected_status": 200,
+            "verify_response": lambda response: (
+                response.json()["body"] == "# Test File 1"
+            )
+        },{
+            "method": "GET",
+            "route": "/files/Notes/file_with_frontmatter.md",
+            "body": None,
+            "expected_status": 200,
+            "verify_response": lambda response: (
+                response.json()["type"] == "file" and
+                response.json()["name"] == "file_with_frontmatter.md" and
+                response.json()["path"] == "Notes/file_with_frontmatter.md" and
+                response.json()["body"] == "# New File" and
+                response.json()["frontmatter"] == {"title": "New Note", "tags": ["note", "test"]} and
+                response.json()["size"] == len("---\ntitle: New Note\ntags: [note, test]\n---\n# New File") and
+                is_iso_timestamp(response.json().get("created", "")) and
+                is_iso_timestamp(response.json().get("modified", ""))
+            )
+        },{
+            "method": "GET",
+            "route": "/files/Notes/file_with_frontmatter.md/raw",
+            "body": None,
+            "expected_status": 200,
+            "verify_response": lambda response: (
+                response.text == "---\ntitle: New Note\ntags: [note, test]\n---\n# New File"
+            )
+        },{
+            "method": "GET",
+            "route": "/files/Notes/file_with_frontmatter.md/metadata",
+            "body": None,
+            "expected_status": 200,
+            "verify_response": lambda response: (
+                response.json()["type"] == "file" and
+                response.json()["name"] == "file_with_frontmatter.md" and
+                response.json()["path"] == "Notes/file_with_frontmatter.md" and
+                "body" not in response.json() and
+                "frontmatter" not in response.json() and
+                response.json()["size"] == len("---\ntitle: New Note\ntags: [note, test]\n---\n# New File") and
+                is_iso_timestamp(response.json().get("created", "")) and
+                is_iso_timestamp(response.json().get("modified", ""))
+            )
+        },{
+            "method": "GET",
+            "route": "/files/Notes/file_with_frontmatter.md/frontmatter",
+            "body": None,
+            "expected_status": 200,
+            "verify_response": lambda response: (
+                response.json()["frontmatter"] == {"title": "New Note", "tags": ["note", "test"]}
+            )
+        },{
+            "method": "GET",
+            "route": "/files/Notes/file_with_frontmatter.md/body",
+            "body": None,
+            "expected_status": 200,
+            "verify_response": lambda response: (
+                response.json()["body"] == "# New File"
             )
         }
     ],
@@ -301,10 +395,11 @@ def test_hidden_directories(client):
     response = client.get("/files")
     assert response.status_code == 200
     files = response.json()
-    assert len(files) == 3
+    assert len(files) == 4
     assert any(f["path"] == "Notes/test1.md" for f in files)
     assert any(f["path"] == "Notes/test2.md" for f in files)
     assert any(f["path"] == "Projects/test3.md" for f in files)
+    assert any(f["path"] == "Notes/file_with_frontmatter.md" for f in files)
     assert not any(f["path"] == ".hidden/test.md" for f in files)
     
     response = client.get("/folders")
@@ -331,20 +426,18 @@ def test_hidden_directories(client):
 )
 def test_paths_with_spaces(client, path, encoded_path):
     # Test creating file with spaces
-    response = client.post(f"/files/{path}", json={"content": "# Test Content"})
+    response = client.post(f"/files/{encoded_path}", json={"content": "# Test Content"})
     assert response.status_code == 200
-    assert response.json()["path"] == path
-    assert response.json()["type"] == "file"
-    assert response.json()["content"] == "# Test Content"
+    assert response.json()["body"] == "# Test Content"
     
     # Test reading file with raw path
     response = client.get(f"/files/{path}")
     assert response.status_code == 200
-    assert response.json()["content"] == "# Test Content"
+    assert response.json()["body"] == "# Test Content"
     assert response.json()["type"] == "file"
     
     # Test reading file with URL-encoded path
     response = client.get(f"/files/{encoded_path}")
     assert response.status_code == 200
-    assert response.json()["content"] == "# Test Content"
+    assert response.json()["body"] == "# Test Content"
     assert response.json()["type"] == "file"

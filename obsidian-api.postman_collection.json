@@ -71,7 +71,8 @@
                   "type": "file",
                   "name": "test1.md",
                   "path": "Notes/test1.md",
-                  "content": "# Test File 1",
+                  "body": "# Test File 1",
+                  "frontmatter": null,
                   "size": 12,
                   "created": "2024-03-20T10:00:00Z",
                   "modified": "2024-03-20T10:00:00Z"
@@ -81,7 +82,7 @@
           ]
         },
         {
-          "name": "Get File Contents",
+          "name": "Get Structured File Content",
           "request": {
             "method": "GET",
             "header": [],
@@ -125,27 +126,49 @@
                 "type": "file",
                 "name": "test1.md",
                 "path": "Notes/test1.md",
-                "content": "# Test File 1",
+                "body": "# Test File 1",
+                "frontmatter": null,
                 "size": 12,
                 "created": "2024-03-20T10:00:00Z",
                 "modified": "2024-03-20T10:00:00Z"
               }
-            },
+            }
+          ]
+        },
+        {
+          "name": "Get Raw File Content",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/files/{{path}}/raw",
+              "host": ["{{base_url}}"],
+              "path": ["files", "{{path}}", "raw"],
+              "variable": [
+                {
+                  "key": "path",
+                  "value": "path/to/file.md",
+                  "description": "Path to the markdown file"
+                }
+              ]
+            }
+          },
+          "response": [
             {
-              "name": "Not Found",
+              "name": "Success",
               "originalRequest": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8000/files/nonexistent.md",
+                  "raw": "http://localhost:8000/files/Notes/test1.md/raw",
                   "protocol": "http",
                   "host": ["localhost"],
                   "port": "8000",
-                  "path": ["files", "nonexistent.md"]
+                  "path": ["files", "Notes", "test1.md", "raw"]
                 }
               },
-              "status": "Not Found",
-              "code": 404,
+              "status": "OK",
+              "code": 200,
               "_postman_previewlanguage": "json",
               "header": [
                 {
@@ -154,7 +177,159 @@
                 }
               ],
               "body": {
-                "detail": "File not found"
+                "type": "file",
+                "name": "test1.md",
+                "path": "Notes/test1.md",
+                "content": "# Test File 1",
+                "size": 12,
+                "created": "2024-03-20T10:00:00Z",
+                "modified": "2024-03-20T10:00:00Z"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get File Metadata",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/files/{{path}}/metadata",
+              "host": ["{{base_url}}"],
+              "path": ["files", "{{path}}", "metadata"],
+              "variable": [
+                {
+                  "key": "path",
+                  "value": "path/to/file.md",
+                  "description": "Path to the markdown file"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8000/files/Notes/test1.md/metadata",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "8000",
+                  "path": ["files", "Notes", "test1.md", "metadata"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "type": "file",
+                "name": "test1.md",
+                "path": "Notes/test1.md",
+                "size": 12,
+                "created": "2024-03-20T10:00:00Z",
+                "modified": "2024-03-20T10:00:00Z"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get File Frontmatter",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/files/{{path}}/frontmatter",
+              "host": ["{{base_url}}"],
+              "path": ["files", "{{path}}", "frontmatter"],
+              "variable": [
+                {
+                  "key": "path",
+                  "value": "path/to/file.md",
+                  "description": "Path to the markdown file"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8000/files/Notes/test1.md/frontmatter",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "8000",
+                  "path": ["files", "Notes", "test1.md", "frontmatter"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "frontmatter": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get File Body",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/files/{{path}}/body",
+              "host": ["{{base_url}}"],
+              "path": ["files", "{{path}}", "body"],
+              "variable": [
+                {
+                  "key": "path",
+                  "value": "path/to/file.md",
+                  "description": "Path to the markdown file"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8000/files/Notes/test1.md/body",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "8000",
+                  "path": ["files", "Notes", "test1.md", "body"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "body": "# Test File 1"
               }
             }
           ]
