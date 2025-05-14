@@ -22,6 +22,10 @@ def test_vault():
             f.write("# Test File 2")
         with open(os.path.join(projects_dir, "test3.md"), "w") as f:
             f.write("# Test File 3")
+            
+        # Create test file with frontmatter
+        with open(os.path.join(notes_dir, "file_with_frontmatter.md"), "w") as f:
+            f.write("---\ntitle: New Note\ntags: [note, test]\n---\n# New File")
         
         yield tmp_dir
 

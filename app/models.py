@@ -1,42 +1,37 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Literal
+from typing import Optional, Literal
 from enum import StrEnum
 from datetime import datetime
-
-# base
 
 class ResourceType(StrEnum):
     FILE = "file"
     FOLDER = "folder"
 
 class ResourceMetadata(BaseModel):
-    name: str = Field(..., description="The name of the file or folder")
-    path: str = Field(..., description="The full relative path from the vault root")
-    created: Optional[datetime] = Field(None, description="The timestamp when the file or folder was created")
-    modified: Optional[datetime] = Field(None, description="The timestamp when the file or folder was last modified")
-
-# request
-
-class FileCreateRequest(BaseModel):
-     content: str = Field(..., description="Content to write to the new file")
-
-class FilePutRequest(BaseModel):
-    content: str = Field(..., description="Content to replace the existing file with")
-
-class FilePatchRequest(BaseModel):
-    path: Optional[str] = Field(None, description="New path to move or rename the file to")
-    content: Optional[str] = Field(None, description="New content to update the file with")
-
-class FolderPatchRequest(BaseModel):
-    path: Optional[str] = Field(None, description="New path to move or rename the folder to")
-
-# response
-    
-class FileResponse(ResourceMetadata):
-    type: Literal[ResourceType.FILE] = Field(..., description="The type of the entry: 'file'")
+    name: str = Field(..., description="Name of the file or folder")
+    path: str = Field(..., description="Full relative path from the vault root")
+    created: Optional[datetime] = Field(None, description="When the file or folder was created")
+    modified: Optional[datetime] = Field(None, description="When the file or folder was last modified")
+ 
+class FileMetadata(ResourceMetadata):
+    type: Literal[ResourceType.FILE] = Field(..., description="Literal value indicating this is a file")
     size: int = Field(..., description="Size of the file in bytes")
-    content: Optional[str] = Field(None, description="The full content of the file")
+    created: datetime = Field(..., description="When the file was created")
+    modified: datetime = Field(..., description="When the file was last modified")
 
-class FolderResponse(ResourceMetadata):
-    type: Literal[ResourceType.FOLDER] = Field(..., description="The type of the entry: 'folder'")
-    children: Optional[List[FileResponse]] = Field(None, description="List of child markdown files")
+class FolderMetadata(ResourceMetadata):
+    type: Literal[ResourceType.FOLDER] = Field(..., description="Literal value indicating this is a folder")
+
+class MarkdownContent(BaseModel):
+    frontmatter: Optional[dict] = Field(None, description="YAML frontmatter of the file")
+    body: Optional[str] = Field(None, description="Body content of the file without frontmatter")
+
+class MarkdownFile(BaseModel):
+    metadata: FileMetadata = Field(..., description="File metadata including name, path, timestamps, and size")
+    content: MarkdownContent = Field(..., description="Content of the markdown file including frontmatter and body")
+
+class Folder(BaseModel):
+    metadata: FolderMetadata = Field(..., description="Folder metadata including name, path, and timestamps")
+
+class Path(BaseModel):
+    path: Optional[str] = Field(None, description="Target path for moving or renaming a file, relative to the vault root")
