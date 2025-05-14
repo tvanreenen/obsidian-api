@@ -29,7 +29,7 @@ from app.utils import (
 from app.models import (
     MarkdownFile,
     FileMetadata,
-    MetadataPatchRequest,
+    Path,
     MarkdownContent
 )
 
@@ -190,7 +190,7 @@ async def put_file_body(
 async def patch_file_metadata(
     vault_file_path: str,
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)],
-    request_model: MetadataPatchRequest
+    request_model: Path
 ) -> MarkdownFile:
     if request_model.path is not None:
         full_destination_path = validate_destination_path(request_model.path, vault_file_path)

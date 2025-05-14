@@ -62,4 +62,4 @@ async def validate_utf8_content(request: Request) -> str:
     try:
         return content.decode('utf-8')
     except UnicodeDecodeError:
-        raise HTTPException(status_code=400, detail="Content must be UTF-8 encoded text")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Content must be UTF-8 encoded text")

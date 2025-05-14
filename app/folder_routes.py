@@ -19,7 +19,7 @@ from app.utils import (
 )
 from app.models import (
     Folder,
-    MetadataPatchRequest
+    Path
 )
 
 # Router setup
@@ -73,7 +73,7 @@ async def create_folder(
 async def move_folder(
     vault_folder_path: str,
     full_folder_path: Annotated[str, Depends(validate_existing_folder)],
-    request_model: MetadataPatchRequest
+    request_model: Path
 ) -> Folder:
     full_destination_path = validate_destination_path(request_model.path, vault_folder_path)
     os.makedirs(os.path.dirname(full_destination_path), exist_ok=True)
