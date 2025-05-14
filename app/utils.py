@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime
 import frontmatter
 from typing import Optional
-from app.models import ResourceType, Folder, MarkdownFile, FileMetadata, MarkdownContent
+from app.models import ResourceType, Folder, MarkdownFile, FileMetadata, MarkdownContent, FolderMetadata
 
 # Core Utilities
 
@@ -85,10 +85,10 @@ async def write_markdown_file(full_file_path: str, file_frontmatter: Optional[di
 # Response Generators
 
 async def get_markdown_file_model(full_file_path: str) -> MarkdownFile:
-    metadata = await read_stats(full_file_path)
+    stats = await read_stats(full_file_path)
     body, frontmatter_data = await read_markdown_file(full_file_path)
     return MarkdownFile(
-        metadata=FileMetadata(**metadata),
+        metadata=FileMetadata(**stats),
         content=MarkdownContent(
             body=body,
             frontmatter=frontmatter_data
@@ -97,7 +97,9 @@ async def get_markdown_file_model(full_file_path: str) -> MarkdownFile:
 
 async def get_folder_model(full_folder_path: str) -> Folder:
     stats = await read_stats(full_folder_path)
-    return Folder(**stats)
+    return Folder(
+        metadata=FolderMetadata(**stats)
+    )
 
 # Walk Helpers
 

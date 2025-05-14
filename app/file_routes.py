@@ -10,7 +10,7 @@ from app.path_validation import (
     validate_existing_markdown_file,
     validate_new_markdown_file,
     validate_destination_path,
-    validate_markdown_content
+    validate_utf8_content
 )
 from app.utils import (
     # Read operations
@@ -51,17 +51,6 @@ async def list_files() -> list[MarkdownFile]:
     return await walk_files()
 
 # Read operations
-@file_router.get(
-    "/{vault_file_path:path}", 
-    summary="Get File",
-    response_description='Get the complete file representation including metadata, YAML frontmatter, and markdown body content.'
-)
-async def read_file(
-    vault_file_path: str,
-    full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
-) -> MarkdownFile:
-    return await get_markdown_file_model(full_file_path)
-
 @file_router.get(
     "/{vault_file_path:path}/raw", 
     summary="Get Raw File",
@@ -110,6 +99,17 @@ async def read_file_body(
     body, _ = await read_markdown_file(full_file_path)
     return body
 
+@file_router.get(
+    "/{vault_file_path:path}", 
+    summary="Get File",
+    response_description='Get the complete file representation including metadata, YAML frontmatter, and markdown body content.'
+)
+async def read_file_structured(
+    vault_file_path: str,
+    full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
+) -> MarkdownFile:
+    return await get_markdown_file_model(full_file_path)
+
 # Create operations
 
 @file_router.post(
@@ -121,7 +121,7 @@ async def create_file_raw(
     request: Request,
     vault_file_path: str,
     full_file_path: Annotated[str, Depends(validate_new_markdown_file)],
-    content: Annotated[str, Depends(validate_markdown_content)]
+    content: Annotated[str, Depends(validate_utf8_content)]
 ) -> MarkdownFile:
     await write_content(full_file_path, content)
     return await get_markdown_file_model(full_file_path)
@@ -150,7 +150,7 @@ async def put_raw_file(
     vault_file_path: str,
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)],
     request: Request,
-    content: Annotated[str, Depends(validate_markdown_content)]
+    content: Annotated[str, Depends(validate_utf8_content)]
 ) -> MarkdownFile:
     await write_content(full_file_path, content)
     return await get_markdown_file_model(full_file_path)
@@ -174,11 +174,12 @@ async def put_file_frontmatter(
     response_description='Replace the entire markdown body content of the file, preserving the frontmatter.'
 )
 async def put_file_body(
+    request: Request,
     vault_file_path: str,
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)],
-    str_body: str
+    content: Annotated[str, Depends(validate_utf8_content)]
 ) -> MarkdownFile:
-    await write_body(full_file_path, str_body)
+    await write_body(full_file_path, content)
     return await get_markdown_file_model(full_file_path)
 
 @file_router.patch(

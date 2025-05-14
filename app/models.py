@@ -30,7 +30,7 @@ class MarkdownFile(BaseModel):
     metadata: FileMetadata = Field(..., description="The metadata of the markdown file")
     content: MarkdownContent = Field(..., description="The content of the markdown file including frontmatter and body")
 
-class Folder(ResourceMetadata):
+class Folder(BaseModel):
     metadata: FolderMetadata = Field(..., description="The metadata of the folder")
 
 class MetadataPatchRequest(BaseModel):
