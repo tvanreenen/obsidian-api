@@ -3,6 +3,7 @@ from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from typing import Optional, Literal
 from app.utils import get_vault_path, is_hidden
+import frontmatter
 
 def _get_full_path(vault_relative_path: str) -> str:
     full_path = os.path.join(get_vault_path(), vault_relative_path)
@@ -60,4 +61,23 @@ def validate_destination_path(vault_destination_path: str, vault_source_path: Op
     return full_path
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail={"errors": exc.errors()}) 
+    return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail={"errors": exc.errors()})
+
+async def validate_utf8_content(request: Request) -> str:
+    content = await request.body()
+    try:
+        return content.decode('utf-8')
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="Content must be UTF-8 encoded text")
+
+async def validate_markdown_content(request: Request) -> str:
+    content = await request.body()
+    try:
+        decoded_content = content.decode('utf-8')
+        if frontmatter.checks(decoded_content):
+            frontmatter.loads(decoded_content)
+        return decoded_content
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Content must be UTF-8 encoded text")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Content must be valid markdown format: {str(e)}") 

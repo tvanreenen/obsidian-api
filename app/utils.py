@@ -1,10 +1,10 @@
 import os
-from fastapi import Response
+import anyio
 from pathlib import Path
 from datetime import datetime
 import frontmatter
 from typing import Optional
-from app.models import ResourceType, FolderResponse, ParsedFileResponse, BaseFileResponse, FrontmatterResponse, BodyResponse
+from app.models import ResourceType, Folder, MarkdownFile, FileMetadata, MarkdownContent
 
 # Core Utilities
 
@@ -23,97 +23,85 @@ def is_hidden(path: str) -> bool:
             
     return False
 
-# Component Generators
+# Read Operations
 
-def get_raw_content(full_file_path: str) -> str:
-    with open(full_file_path, 'r', encoding='utf-8') as f:
-        return f.read()
+async def read_file(full_file_path: str) -> str:
+    async with await anyio.open_file(full_file_path, 'r', encoding='utf-8') as f:
+        return await f.read()
 
-def get_parsed_content(content: str) -> tuple[str, Optional[dict]]:
+async def read_markdown_file(full_file_path: str) -> tuple[str, Optional[dict]]:
+    content = await read_file(full_file_path)
     post = frontmatter.loads(content)
     return post.content, post.metadata if post.metadata else None
 
-def get_file_metadata(full_file_path: str) -> dict:
-    path = os.path.relpath(full_file_path, get_vault_path())
-    stats = os.stat(full_file_path)
+async def read_stats(full_path: str) -> dict:
+    path = os.path.relpath(full_path, get_vault_path())
+    stats = os.stat(full_path)
     
     return {
         "name": os.path.basename(path),
         "path": path,
-        "type": ResourceType.FILE,
+        "type": ResourceType.FILE if os.path.isfile(full_path) else ResourceType.FOLDER,
         "size": stats.st_size,
         "created": datetime.fromtimestamp(stats.st_ctime),
         "modified": datetime.fromtimestamp(stats.st_mtime)
     }
 
-# Response Generators
+# Write Operations
 
-def get_raw_response(full_file_path: str) -> Response:
-    content = get_raw_content(full_file_path)
-    return Response(content=content, media_type="text/plain")
+async def write_content(full_file_path: str, content: str) -> None:
+    async with await anyio.open_file(full_file_path, 'w', encoding='utf-8') as f:
+        await f.write(content)
 
-def get_file_response(full_file_path: str) -> ParsedFileResponse:
-    metadata = get_file_metadata(full_file_path)
-    content = get_raw_content(full_file_path)
-    body, frontmatter_data = get_parsed_content(content)
-    return ParsedFileResponse(
-        **metadata,
-        body=body,
-        frontmatter=frontmatter_data
-    )
-
-def get_file_metadata_response(full_file_path: str) -> BaseFileResponse:
-    return BaseFileResponse(**get_file_metadata(full_file_path))
-
-def get_file_frontmatter_response(full_file_path: str) -> FrontmatterResponse:
-    content = get_raw_content(full_file_path)
-    _, frontmatter_data = get_parsed_content(content)
-    return FrontmatterResponse(frontmatter=frontmatter_data)
-
-def get_file_body_response(full_file_path: str) -> BodyResponse:
-    content = get_raw_content(full_file_path)
-    body, _ = get_parsed_content(content)
-    return BodyResponse(body=body)
-
-def get_folder_response(full_folder_path: str) -> FolderResponse:
-    path = os.path.relpath(full_folder_path, get_vault_path())
-    stats = os.stat(full_folder_path)
-    
-    return FolderResponse(
-        name=os.path.basename(path),
-        path=path,
-        type=ResourceType.FOLDER,
-        size=stats.st_size,
-        created=datetime.fromtimestamp(stats.st_ctime),
-        modified=datetime.fromtimestamp(stats.st_mtime)
-    )
-
-def update_file_content(full_file_path: str, content: str) -> None:
-    with open(full_file_path, 'w', encoding='utf-8') as f:
-        f.write(content)
-
-def update_frontmatter(full_file_path: str, frontmatter_data: dict) -> None:
-    content = get_raw_content(full_file_path)
+async def write_frontmatter(full_file_path: str, frontmatter_data: dict) -> None:
+    content = await read_file(full_file_path)
     post = frontmatter.loads(content)
     post.metadata = frontmatter_data
-    update_file_content(full_file_path, frontmatter.dumps(post))
+    await write_content(full_file_path, frontmatter.dumps(post))
 
-def update_body(full_file_path: str, body: str) -> None:
-    content = get_raw_content(full_file_path)
-    post = frontmatter.loads(content)
-    post.content = body
-    update_file_content(full_file_path, frontmatter.dumps(post))
-
-def merge_frontmatter(full_file_path: str, frontmatter_updates: dict) -> None:
-    content = get_raw_content(full_file_path)
+async def merge_frontmatter(full_file_path: str, frontmatter_data: dict) -> None:
+    content = await read_file(full_file_path)
     post = frontmatter.loads(content)
     current_metadata = post.metadata or {}
-    post.metadata = {**current_metadata, **frontmatter_updates}
-    update_file_content(full_file_path, frontmatter.dumps(post))
+    post.metadata = {**current_metadata, **frontmatter_data}
+    await write_content(full_file_path, frontmatter.dumps(post))
+
+async def write_body(full_file_path: str, body: str) -> None:
+    content = await read_file(full_file_path)
+    post = frontmatter.loads(content)
+    post.content = body
+    await write_content(full_file_path, frontmatter.dumps(post))
+
+async def write_markdown_file(full_file_path: str, file_frontmatter: Optional[dict] = {}, file_body: Optional[str] = None) -> None:
+    os.makedirs(os.path.dirname(full_file_path), exist_ok=True)
+
+    post = frontmatter.Post(
+        content=file_body or "",
+        **file_frontmatter if file_frontmatter else {}
+    )
+    dumped = frontmatter.dumps(post)
+    await write_content(full_file_path, dumped)
+
+# Response Generators
+
+async def get_markdown_file_model(full_file_path: str) -> MarkdownFile:
+    metadata = await read_stats(full_file_path)
+    body, frontmatter_data = await read_markdown_file(full_file_path)
+    return MarkdownFile(
+        metadata=FileMetadata(**metadata),
+        content=MarkdownContent(
+            body=body,
+            frontmatter=frontmatter_data
+        )
+    )
+
+async def get_folder_model(full_folder_path: str) -> Folder:
+    stats = await read_stats(full_folder_path)
+    return Folder(**stats)
 
 # Walk Helpers
 
-def walk_folders() -> list[FolderResponse]:
+async def walk_folders() -> list[Folder]:
     vault_path = get_vault_path()
     items = []
     
@@ -121,11 +109,11 @@ def walk_folders() -> list[FolderResponse]:
         for dir_name in dirs:
             full_dir_path = os.path.join(root, dir_name)
             if not is_hidden(full_dir_path):
-                items.append(get_folder_response(full_dir_path))
+                items.append(await get_folder_model(full_dir_path))
     
     return items
 
-def walk_files() -> list[ParsedFileResponse]:
+async def walk_files() -> list[MarkdownFile]:
     vault_path = get_vault_path()
     items = []
     
@@ -134,6 +122,6 @@ def walk_files() -> list[ParsedFileResponse]:
             if file.endswith('.md'):
                 full_file_path = os.path.join(root, file)
                 if not is_hidden(full_file_path):
-                    items.append(get_file_response(full_file_path))
+                    items.append(await get_markdown_file_model(full_file_path))
     
     return items
