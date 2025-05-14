@@ -78,20 +78,80 @@ Notes:
 
 > ⚠️ **Warning**: This API does not provide HTTPS natively. To secure your deployment and prevent credentials and sensitive data from being transmitted in plaintext over the internet, you must place it behind a secure reverse proxy (e.g., NGINX, Traefik, or Cloudflare Tunnel) that handles HTTPS.
 
-## API Endpoints
+## API
 
 ### Files
-- `GET /files` - List all markdown files
-- `GET /files/{path}` - Read the contents of a specific file
-- `POST /files/{path}` - Create a new file
-- `PATCH /files/{path}` - Move/Rename a file
-- `PUT /files{path}` - Update the contents of an existing file
+
+#### Primary Routes
+- `GET /files` - List all markdown files in your vault with their metadata, including path, size, and modification dates
+- `GET /files/{path}` - Get the complete file representation including metadata, YAML frontmatter, and markdown body content
+- `POST /files/{path}` - Create a new markdown file at the specified path using a JSON object with 'frontmatter' (YAML object) and 'body' (markdown string) fields
+- `PUT /files/{path}` - Replace the entire raw content of the file. The content should include YAML frontmatter (between --- markers) followed by markdown body content
+- `PATCH /files/{path}` - Merge new metadata with existing file metadata, including moving/renaming the file to a new path within the vault
+
+#### Sub-Resource Routes
+
+##### Raw File
+
+- `GET /files/{path}/raw` - Get the raw contents of the markdown file at the specified path, including frontmatter and body content exactly as stored
+- `POST /files/{path}/raw` - Create a new markdown file at the specified path with raw text content. The content should include YAML frontmatter (between --- markers) followed by markdown body content
+- `PUT /files/{path}/raw` - Replace the entire raw content of the file. The content should include YAML frontmatter (between --- markers) followed by markdown body content
+
+##### File Metadata
+
+- `GET /files/{path}/metadata` - Get the file's metadata including name, path, size, creation date, and last modification date
+- `PATCH /files/{path}/metadata` - Merge new metadata with existing file metadata, including moving/renaming the file to a new path within the vault
+##### Markdown Frontmatter
+
+- `GET /files/{path}/frontmatter` - Get the YAML frontmatter of the file as a JSON object
+- `PUT /files/{path}/frontmatter` - Replace the entire YAML frontmatter of the file with a new JSON object containing frontmatter data
+- `PATCH /files/{path}/frontmatter` - Merge a new JSON object containing frontmatter data with the existing YAML frontmatter
+##### Markdown Body
+
+- `GET /files/{path}/body` - Get the markdown body content of the file, excluding the frontmatter section
+- `PUT /files/{path}/body` - Replace the entire markdown body content of the file, preserving the frontmatter
+
+#### Response Schema
+```json
+{
+  "metadata": {
+    "name": "string",
+    "path": "string",
+    "type": "file",
+    "size": 0,
+    "created": "datetime",
+    "modified": "datetime"
+  },
+  "content": {
+    "frontmatter": {
+      "key": "value"
+    },
+    "body": "string"
+  }
+}
+```
 
 ### Folders
-- `GET /folders` - List all folders
-- `GET /folders/{path}` - List files in a specific folder
-- `POST /folders/{path}` - Create a new folder
-- `PATCH /folders/{path}` - Move/Rename a folder
+
+#### Primary Routes
+
+- `GET /folders` - List all folders in your vault
+- `GET /folders/{path}` - Get the folder's metadata including name, path, size, creation date, and last modification date
+- `POST /folders/{path}` - Create a new folder at the specified path
+- `PATCH /folders/{path}` - Move/rename the folder to a new path within the vault
+
+#### Response Schema
+```json
+{
+  "metadata": {
+    "name": "string",
+    "path": "string",
+    "type": "folder",
+    "created": "datetime",
+    "modified": "datetime"
+  }
+}
+```
 
 For detailed API documentation, including request/response schemas and examples, visit the Swagger UI at `http://localhost:8000/docs`.
 
@@ -113,7 +173,9 @@ I've enjoyed using the [Cursor](https://www.cursor.com/)-like [Obsidian Copilot]
 - [x] Create a base local API for file and folders.
 - [x] Make deployable in a local Docker services.
 - [x] Provide an authentication mechanism.
-- [ ] Implement a MCP server for the API.
-- [ ] Add additional endpoints like DELETE and perhaps MERGE. But I'd want configuration or authorization to be in plact to control access.
-- [ ] Provide file/folder metadata. Perhaps integrating file frontmatter into metadata.
+- [x] File and folder metadata/stats.
+- [x] Frontmatter parsing.
+- [ ] MCP server wrapper around API.
+- [ ] Sync / embedding management for vector store.
+- [ ] DELETE methods.
 
