@@ -1,7 +1,7 @@
 # Standard library imports
 import os
 # Third-party imports
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Path
 from fastapi.responses import PlainTextResponse
 from typing import Annotated
 # Local application imports
@@ -29,7 +29,7 @@ from app.utils import (
 from app.models import (
     MarkdownFile,
     FileMetadata,
-    Path,
+    PathModel,
     MarkdownContent
 )
 
@@ -43,8 +43,9 @@ file_router = APIRouter(
 
 # List operations
 @file_router.get(
-    "/", 
-    summary="List Files", 
+    "/",
+    operation_id="getAllFiles",
+    summary="Get All Files",
     description="List all markdown files in your vault with their metadata, including path, size, and modification dates."
 )
 async def list_files() -> list[MarkdownFile]:
@@ -53,34 +54,37 @@ async def list_files() -> list[MarkdownFile]:
 # Read operations
 @file_router.get(
     "/{vault_file_path:path}/raw", 
-    summary="Get Raw File",
+    operation_id="getFileAsText",
+    summary="Get File As Text",
     response_description='Get the raw contents of the markdown file at the specified path, including frontmatter and body content exactly as stored.',
     response_class=PlainTextResponse
 )
 async def read_raw_file(
-    vault_file_path: str,
+    vault_file_path: Annotated[str, Path(..., description="The path of the file to read")],
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
 ) -> str:
     return await read_file(full_file_path)
 
 @file_router.get(
     "/{vault_file_path:path}/metadata", 
+    operation_id="getFileMetadata",
     summary="Get File Metadata",
     response_description='Get the file\'s metadata including name, path, size, creation date, and last modification date.'
 )
 async def read_file_metadata(
-    vault_file_path: str,
+    vault_file_path: Annotated[str, Path(..., description="The path of the file to read")],
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
 ) -> FileMetadata:
     return await read_stats(full_file_path)
 
 @file_router.get(
     "/{vault_file_path:path}/frontmatter", 
+    operation_id="getFileFrontmatter",
     summary="Get File Frontmatter",
     response_description='Get the YAML frontmatter of the file as a JSON object.'
 )
 async def read_file_frontmatter(
-    vault_file_path: str,
+    vault_file_path: Annotated[str, Path(..., description="The path of the file to read")],
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
 ) -> dict:
     _, frontmatter = await read_markdown_file(full_file_path)
@@ -88,12 +92,13 @@ async def read_file_frontmatter(
 
 @file_router.get(
     "/{vault_file_path:path}/body", 
+    operation_id="getFileBody",
     summary="Get File Body",
     response_description='Get the markdown body content of the file, excluding the frontmatter section.',
     response_class=PlainTextResponse
 )
 async def read_file_body(
-    vault_file_path: str,
+    vault_file_path: Annotated[str, Path(..., description="The path of the file to read")],
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
 ) -> str:
     body, _ = await read_markdown_file(full_file_path)
@@ -101,11 +106,12 @@ async def read_file_body(
 
 @file_router.get(
     "/{vault_file_path:path}", 
-    summary="Get File",
+    operation_id="getFileAsJson",
+    summary="Get File As Json",
     response_description='Get the complete file representation including metadata, YAML frontmatter, and markdown body content.'
 )
 async def read_file_structured(
-    vault_file_path: str,
+    vault_file_path: Annotated[str, Path(..., description="The path of the file to read")],
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)]
 ) -> MarkdownFile:
     return await get_markdown_file_model(full_file_path)
@@ -114,12 +120,13 @@ async def read_file_structured(
 
 @file_router.post(
     "/{vault_file_path:path}/raw", 
-    summary="Create File (Raw)",
+    operation_id="createFileFromText",
+    summary="Create File From Text",
     response_description='Create a new markdown file at the specified path with raw text content. The content should include YAML frontmatter (between --- markers) followed by markdown body content.'
 )
 async def create_file_raw(
     request: Request,
-    vault_file_path: str,
+    vault_file_path: Annotated[str, Path(..., description="The path of the file to create")],
     full_file_path: Annotated[str, Depends(validate_new_markdown_file)],
     content: Annotated[str, Depends(validate_utf8_content)]
 ) -> MarkdownFile:
@@ -128,11 +135,12 @@ async def create_file_raw(
 
 @file_router.post(
     "/{vault_file_path:path}", 
-    summary="Create File (Structured)",
+    operation_id="createFileFromJson",
+    summary="Create File From Json",
     response_description='Create a new markdown file at the specified path using a JSON object with \'frontmatter\' (YAML object) and \'body\' (markdown string) fields.'
 )
 async def create_file_structured(
-    vault_file_path: str,
+    vault_file_path: Annotated[str, Path(..., description="The path of the file to create")],
     full_file_path: Annotated[str, Depends(validate_new_markdown_file)],
     request_model: MarkdownContent
 ) -> MarkdownFile:
@@ -147,7 +155,7 @@ async def create_file_structured(
     response_description='Replace the entire raw content of the file. The content should include YAML frontmatter (between --- markers) followed by markdown body content.'
 )
 async def put_raw_file(
-    vault_file_path: str,
+    vault_file_path: Annotated[str, Path(..., description="The path of the file to update")],
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)],
     request: Request,
     content: Annotated[str, Depends(validate_utf8_content)]
@@ -161,7 +169,7 @@ async def put_raw_file(
     response_description='Replace the entire YAML frontmatter of the file with a new JSON object containing frontmatter data.'
 )
 async def put_file_frontmatter(
-    vault_file_path: str,
+    vault_file_path: Annotated[str, Path(..., description="The path of the file to update")],
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)],
     json_body: dict
 ) -> MarkdownFile:
@@ -175,7 +183,7 @@ async def put_file_frontmatter(
 )
 async def put_file_body(
     request: Request,
-    vault_file_path: str,
+    vault_file_path: Annotated[str, Path(..., description="The path of the file to update")],
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)],
     content: Annotated[str, Depends(validate_utf8_content)]
 ) -> MarkdownFile:
@@ -184,13 +192,14 @@ async def put_file_body(
 
 @file_router.patch(
     "/{vault_file_path:path}/metadata",
-    summary="Merge File Metadata",
+    operation_id="updateFileMetadata",
+    summary="Update File Metadata",
     response_description='Merge new metadata with existing file metadata, including moving/renaming the file to a new path within the vault.'
 )
 async def patch_file_metadata(
-    vault_file_path: str,
+    vault_file_path: Annotated[str, Path(..., description="The path of the file to update")],
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)],
-    request_model: Path
+    request_model: PathModel
 ) -> MarkdownFile:
     if request_model.path is not None:
         full_destination_path = validate_destination_path(request_model.path, vault_file_path)
@@ -201,11 +210,12 @@ async def patch_file_metadata(
 
 @file_router.patch(
     "/{vault_file_path:path}/frontmatter",
-    summary="Merge Frontmatter",
+    operation_id="updateFileFrontmatter",
+    summary="Update File Frontmatter",
     response_description='Merge a new JSON object containing frontmatter data with the existing YAML frontmatter.'
 )
 async def patch_file_frontmatter(
-    vault_file_path: str,
+    vault_file_path: Annotated[str, Path(..., description="The path of the file to update")],
     full_file_path: Annotated[str, Depends(validate_existing_markdown_file)],
     json_body: dict
 ) -> MarkdownFile:

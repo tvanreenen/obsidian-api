@@ -1,9 +1,8 @@
 import os
 from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
-from typing import Optional, Literal
+from typing import Optional
 from app.utils import get_vault_path, is_hidden
-import frontmatter
 
 def _get_full_path(vault_relative_path: str) -> str:
     return os.path.join(get_vault_path(), vault_relative_path)
