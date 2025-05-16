@@ -19,6 +19,11 @@ def test_missing_api_key(client, monkeypatch):
     assert response.status_code == 500
     assert response.json()["detail"] == "API key not configured. Set OBSIDIAN_API_KEY environment variable."
 
+@pytest.fixture(autouse=True)
+def reset_obsidian_auth(monkeypatch):
+    monkeypatch.setenv("OBSIDIAN_AUTH_ENABLED", "false")
+    monkeypatch.delenv("OBSIDIAN_API_KEY", raising=False)
+
 @pytest.mark.parametrize(
     "route",
     [

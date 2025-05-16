@@ -7,7 +7,7 @@ from app.path_validation import validation_exception_handler
 
 app = FastAPI(
     title="Obsidian API",
-    version="0.2.0",
+    version="0.4.0",
     description="A personal RESTful API for managing markdown files and folders in your Obsidian vault."
 )
 
@@ -35,3 +35,11 @@ async def file_exists_error_handler(request, exc):
 app.include_router(file_router)
 app.include_router(folder_router)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
+
+if __name__ == "__main__":
+    mcp = FastMCP.from_fastapi(app=app, exclude={
+        "put_raw_file",
+        "put_file_frontmatter",
+        "put_file_body"
+    })
+    mcp.run(transport="streamable-http", host="0.0.0.0", port=8001)

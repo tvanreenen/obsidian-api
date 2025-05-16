@@ -1,11 +1,30 @@
 services:
   obsidian-api:
+    container_name: obsidian-api
     image: obsidian-api:latest
     build: .
     ports:
       - "8000:8000"
     environment:
       - OBSIDIAN_API_VAULT_PATH=/mnt/vault
+      - OBSIDIAN_AUTH_ENABLED=false
+      - OBSIDIAN_API_KEY=${OBSIDIAN_API_KEY}
     volumes:
       - ${OBSIDIAN_API_VAULT_PATH}:/mnt/vault
+    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
+    restart: unless-stopped 
+
+  obsidian-mcp:
+    container_name: obsidian-mcp
+    image: obsidian-api:latest
+    build: .
+    ports:
+      - "8001:8001"
+    environment:
+      - OBSIDIAN_API_VAULT_PATH=/mnt/vault
+      - OBSIDIAN_AUTH_ENABLED=false
+      - OBSIDIAN_API_KEY=${OBSIDIAN_API_KEY}
+    volumes:
+      - ${OBSIDIAN_API_VAULT_PATH}:/mnt/vault
+    command: uv run python -m app.main
     restart: unless-stopped 

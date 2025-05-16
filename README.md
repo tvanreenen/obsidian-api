@@ -2,10 +2,11 @@
 
 # Obsidian API
 
-A personal RESTful API for managing markdown files and folders in your [Obsidian](https://obsidian.md/) vault.
+A personal RESTful API (and MCP server) for managing markdown files and folders in your [Obsidian](https://obsidian.md/) vault.
 
 Built with:
-- [FastAPI](https://github.com/FastAPI/FastAPI) for the web framework
+- [FastAPI](https://github.com/FastAPI/FastAPI) for the base framework of exposing file operations
+- [FastMCP](https://github.com/jlowin/fastmcp) for the option to run as an MCP server instead of an API
 - [Pydantic](https://github.com/pydantic/pydantic) for data validation
 - [Uvicorn](https://github.com/encode/uvicorn) for the ASGI server
 - [Pytest](https://github.com/pytest-dev/pytest) for testing
@@ -26,24 +27,48 @@ OBSIDIAN_API_KEY="your-secret-api-key"  # Required if authentication is enabled
 Start the server:
 ```bash
 source .env
-uv run uvicorn app.main:app --reload
+make serve
 ```
 
 The API will be available at `http://localhost:8000` with interactive documentation at `http://localhost:8000/docs`.
 
 ### Docker Environment
 
-Build and start the container:
+Build and start the containers:
 ```bash
-docker compose up --build -d
+make docker-build
+make docker-up
 ```
+
+**This will start two services:**
+- The RESTful API on **port 8000**
+- The MCP server on **port 8001**
 
 The API will be available at:
 - `http://localhost:8000` (from your machine)
 - `http://<your-ip-address>:8000` (from other devices on your network)
 - `http://obsidian-api:8000` (from other containers in the same Docker network)
 
-Note: The container mounts your Obsidian vault as a volume at `/mnt/vault` inside the container.
+The MCP server will be available at:
+- `http://localhost:8001` (from your machine)
+- `http://<your-ip-address>:8001` (from other devices on your network)
+- `http://obsidian-mcp:8001` (from other containers in the same Docker network)
+
+Note: The containers mount your Obsidian vault as a volume at `/mnt/vault` inside the containers.
+
+### How to Connect and Test Locally
+
+To start the RESTful API locally:
+```bash
+make serve
+```
+This will launch the API at http://localhost:8000. You can use the included Postman collection in the repo to test the API endpoints interactively.
+
+To start the MCP Inspector for testing your MCP server:
+```bash
+make mcp
+```
+This will launch the MCP Inspector, allowing you to visually explore and test the MCP server at http://localhost:8001.
 
 ## Security
 

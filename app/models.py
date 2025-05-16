@@ -33,5 +33,5 @@ class MarkdownFile(BaseModel):
 class Folder(BaseModel):
     metadata: FolderMetadata = Field(..., description="Folder metadata including name, path, and timestamps")
 
-class Path(BaseModel):
+class PathModel(BaseModel):
     path: Optional[str] = Field(None, description="Target path for moving or renaming a file, relative to the vault root")
