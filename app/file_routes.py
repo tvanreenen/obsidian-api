@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Request, Path
 from fastapi.responses import PlainTextResponse
 from typing import Annotated
 # Local application imports
-from app.authentication import ObsidianHTTPBearer
+from app.authentication import get_auth_dependency
 from app.path_validation import (
     validate_existing_markdown_file,
     validate_new_markdown_file,
@@ -34,11 +34,10 @@ from app.models import (
 )
 
 # Router setup
-obsidian_security = ObsidianHTTPBearer()
 file_router = APIRouter(
     prefix="/files",
     tags=["files"],
-    dependencies=[Depends(obsidian_security)]
+    dependencies=[Depends(get_auth_dependency())]
 )
 
 # List operations

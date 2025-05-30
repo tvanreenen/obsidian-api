@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Path
 from typing import Annotated
 
 # Local application imports
-from app.authentication import ObsidianHTTPBearer
+from app.authentication import get_auth_dependency
 from app.path_validation import (
     validate_existing_folder,
     validate_new_folder,
@@ -23,11 +23,10 @@ from app.models import (
 )
 
 # Router setup
-obsidian_security = ObsidianHTTPBearer()
 folder_router = APIRouter(
     prefix="/folders",
     tags=["folders"],
-    dependencies=[Depends(obsidian_security)]
+    dependencies=[Depends(get_auth_dependency())]
 )
 
 # List operations

@@ -1,47 +1,32 @@
-"""
-Authentication dependencies for FastAPI endpoints.
-
-These dependencies handle API key authentication for the Obsidian API.
-They validate bearer tokens against the configured API key and can be
-injected into FastAPI endpoints using Depends().
-"""
 import os
-from fastapi import HTTPException, Request, status
-from fastapi.security import HTTPAuthorizationCredentials
+from fastapi_plugin import Auth0FastAPI
 
-class ObsidianHTTPBearer:    
-    def __init__(self, auto_error: bool = True):
-        self.auto_error = auto_error
-    
-    async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:
-        if not os.getenv("OBSIDIAN_AUTH_ENABLED", "false").lower() == "true":
+AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN", "")
+API_AUDIENCE = os.getenv("API_AUDIENCE", "")
+AUTH0_CLIENT_ID = os.getenv("AUTH0_CLIENT_ID", "")
+AUTH0_CLIENT_SECRET = os.getenv("AUTH0_CLIENT_SECRET", "")
+AUTH0_SECRET = os.getenv("AUTH0_SECRET", "")
+
+if os.getenv("OBSIDIAN_AUTH_ENABLED", "false").lower() == "true":
+    missing = []
+    if not AUTH0_DOMAIN:
+        missing.append("AUTH0_DOMAIN")
+    if not API_AUDIENCE:
+        missing.append("API_AUDIENCE")
+    if not AUTH0_CLIENT_ID:
+        missing.append("AUTH0_CLIENT_ID")
+    if not AUTH0_CLIENT_SECRET:
+        missing.append("AUTH0_CLIENT_SECRET")
+    if not AUTH0_SECRET:
+        missing.append("AUTH0_SECRET")
+    if missing:
+        raise RuntimeError(f"The following required environment variables are not set (but are required when OBSIDIAN_AUTH_ENABLED is true): {', '.join(missing)}")
+
+def get_auth_dependency():
+    if os.getenv("OBSIDIAN_AUTH_ENABLED", "false").lower() == "true":
+        auth = Auth0FastAPI(domain=AUTH0_DOMAIN, audience=API_AUDIENCE)
+        return auth.require_auth()
+    else:
+        async def allow_all():
             return None
-
-        if not os.getenv("OBSIDIAN_API_KEY"):
-            if self.auto_error:
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="API key not configured. Set OBSIDIAN_API_KEY environment variable.")
-            return None
-
-        auth = request.headers.get("Authorization")
-        if not auth:
-            if self.auto_error:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing authorization header")
-            return None
-
-        scheme, _, token = auth.partition(" ")
-        if scheme.lower() != "bearer":
-            if self.auto_error:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong authorization scheme")
-            return None
-
-        if not token:
-            if self.auto_error:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing authorization token")
-            return None
-
-        if token != os.getenv("OBSIDIAN_API_KEY"):
-            if self.auto_error:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authorization token")
-            return None
-
-        return HTTPAuthorizationCredentials(scheme=scheme, credentials=token)
+        return allow_all

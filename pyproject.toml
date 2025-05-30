@@ -9,6 +9,8 @@ dependencies = [
     "fastmcp>=2.3.4",
     "python-frontmatter>=1.1.0",
     "uvicorn>=0.34.2",
+    "python-dotenv>=1.1.0",
+    "auth0-fastapi-api>=1.0.0b3",
 ]
 
 [dependency-groups]
